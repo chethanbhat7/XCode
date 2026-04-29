@@ -4,9 +4,9 @@ export function Sidebar({ role, taskCount }: { role: string; taskCount: number }
   return (
     <aside>
       <div className="brand">
-        <div className="brand-mark">P</div>
+        <div className="brand-mark">X</div>
         <div>
-          <h1>PulseBoard</h1>
+          <h1>X Code</h1>
           <p>AI project control center</p>
         </div>
       </div>

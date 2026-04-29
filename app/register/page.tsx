@@ -1,39 +1,32 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { readSession, saveSession, validateCredentials } from "@/lib/session";
+import { registerUser, saveSession } from "@/lib/session";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-
-  useEffect(() => {
-    const session = readSession();
-    if (session) {
-      router.replace(session.role === "developer" ? "/developer" : "/manager");
-    }
-  }, [router]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const formData = new FormData(event.currentTarget);
+    const name = String(formData.get("name") || "");
     const email = String(formData.get("email") || "");
     const password = String(formData.get("password") || "");
+    const role = String(formData.get("role") || "manager") as "manager" | "developer";
 
-    const user = validateCredentials(email, password);
-    if (!user) {
-      alert("No matching account found. Please register first.");
-      router.push("/register");
+    const result = registerUser({ name, email, password, role });
+    if (!result.ok) {
+      alert(result.error || "Could not register");
       return;
     }
 
-    saveSession({ email: user.email, role: user.role, name: user.name });
-    router.push(user.role === "developer" ? "/developer" : "/manager");
+    // Auto sign-in after registration
+    saveSession({ email, role, name });
+    router.push(role === "developer" ? "/developer" : "/manager");
   }
 
   return (
@@ -52,12 +45,15 @@ export default function LoginPage() {
         <Card className="auth-form">
           <div className="panel-head">
             <div>
-              <h2 className="auth-title">Sign in</h2>
-              <span>Enter your credentials to continue</span>
+              <h2 className="auth-title">Create your account</h2>
             </div>
           </div>
 
           <form className="form-grid" onSubmit={handleSubmit}>
+            <div className="field">
+              <label htmlFor="name">Full name</label>
+              <Input id="name" name="name" type="text" placeholder="Jane Doe" required />
+            </div>
             <div className="field">
               <label htmlFor="email">Email</label>
               <Input id="email" name="email" type="email" placeholder="you@company.com" required />
@@ -66,10 +62,18 @@ export default function LoginPage() {
               <label htmlFor="password">Password</label>
               <Input id="password" name="password" type="password" placeholder="••••••••" required />
             </div>
-            <Button className="full-width" type="submit">Sign in</Button>
+            <div className="field">
+              <label htmlFor="role">Role</label>
+              <Select id="role" name="role" defaultValue="manager">
+                <option value="manager">Manager</option>
+                <option value="developer">Developer</option>
+              </Select>
+            </div>
+
+            <Button className="full-width" type="submit">Create account</Button>
           </form>
 
-          <p className="footer-note">No account? <a href="/register">Register here</a>.</p>
+          <p className="footer-note">Already registered? <a href="/">Sign in</a>.</p>
         </Card>
       </div>
     </main>

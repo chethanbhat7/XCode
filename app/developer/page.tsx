@@ -15,9 +15,13 @@ export default function DeveloperPreviewPage() {
     }
   }, [router, session]);
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
-  return <DashboardView role="developer" />;
+  // Developer view is not available yet — show minimal placeholder.
+  return (
+    <div style={{ padding: 24 }}>
+      <h2>Developer workspace</h2>
+      <p>Developer view is not available right now.</p>
+    </div>
+  );
 }

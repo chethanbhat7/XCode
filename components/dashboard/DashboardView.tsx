@@ -36,7 +36,7 @@ export function DashboardView({ role }: { role: "manager" | "developer" }) {
 
       <main>
         <div className="mobile-header">
-          <div className="title">PulseBoard</div>
+          <div className="title">X Code</div>
           <div className="sub">AI project dashboard for managers and developers</div>
         </div>
 
