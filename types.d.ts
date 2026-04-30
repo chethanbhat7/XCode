@@ -14,6 +14,7 @@ declare module "react" {
   export type InputHTMLAttributes<T = any> = any;
   export type SelectHTMLAttributes<T = any> = any;
   export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
+  export function useState<T>(initialValue: T | (() => T)): [T, (value: T | ((prev: T) => T)) => void];
 }
 
 declare module "next/navigation" {

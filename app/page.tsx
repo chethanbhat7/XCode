@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { readSession, saveSession, validateCredentials } from "@/lib/session";
+import { readSession, saveSession } from "@/lib/session";
+import { validateEmail, validatePassword } from "@/lib/validation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [generalError, setGeneralError] = useState("");
 
   useEffect(() => {
     const session = readSession();
@@ -18,22 +21,60 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrors({});
+    setGeneralError("");
 
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") || "");
     const password = String(formData.get("password") || "");
 
-    const user = validateCredentials(email, password);
-    if (!user) {
-      alert("No matching account found. Please register first.");
-      router.push("/register");
+    // Client-side validation
+    const errors_: { [key: string]: string } = {};
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.valid) errors_.email = emailCheck.error || "";
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.valid) errors_.password = passwordCheck.error || "";
+
+    if (Object.keys(errors_).length > 0) {
+      setErrors(errors_);
       return;
     }
 
-    saveSession({ email: user.email, role: user.role, name: user.name });
-    router.push(user.role === "developer" ? "/developer" : "/manager");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setGeneralError(result.error || "Login failed");
+        setLoading(false);
+        return;
+      }
+
+      // Save session and redirect
+      saveSession({ email: result.user.email, role: result.user.role, name: result.user.name });
+      router.push(result.user.role === "developer" ? "/developer" : "/manager");
+    } catch (err) {
+      console.error("Login error:", err);
+      setGeneralError("Failed to sign in. Please try again.");
+      setLoading(false);
+    }
+  }
+
+  function clearFieldError(field: string) {
+    setErrors((prev: { [key: string]: string }) => {
+      const updated = { ...prev };
+      delete updated[field];
+      return updated;
+    });
   }
 
   return (
@@ -57,16 +98,40 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {generalError && (
+            <div style={{ padding: "12px 14px", borderRadius: "12px", background: "rgba(251,113,133,0.12)", border: "1px solid rgba(251,113,133,0.3)", color: "#fecdd3", marginBottom: "16px", fontSize: "0.88rem" }}>
+              {generalError}
+            </div>
+          )}
+
           <form className="form-grid" onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="email">Email</label>
-              <Input id="email" name="email" type="email" placeholder="you@company.com" required />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@company.com"
+                onFocus={() => clearFieldError("email")}
+                required
+              />
+              {errors.email && <span style={{ color: "#fecdd3", fontSize: "0.78rem" }}>{errors.email}</span>}
             </div>
             <div className="field">
               <label htmlFor="password">Password</label>
-              <Input id="password" name="password" type="password" placeholder="••••••••" required />
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                onFocus={() => clearFieldError("password")}
+                required
+              />
+              {errors.password && <span style={{ color: "#fecdd3", fontSize: "0.78rem" }}>{errors.password}</span>}
             </div>
-            <Button className="full-width" type="submit">Sign in</Button>
+            <Button className="full-width" type="submit" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in"}
+            </Button>
           </form>
 
           <p className="footer-note">No account? <a href="/register">Register here</a>.</p>
