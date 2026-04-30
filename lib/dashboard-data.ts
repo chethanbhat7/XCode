@@ -1,3 +1,5 @@
+import type { ActivityItem } from "@/components/dashboard/ActivityFeed";
+
 export const dashboardData = {
   stats: [
     { label: "Active projects", value: "02", delta: "+1 this week" },
@@ -44,7 +46,7 @@ export const dashboardData = {
       copy: "QA needs regression results before release planning can continue.",
       tone: "warning"
     }
-  ],
+  ] satisfies ActivityItem[],
   usageChart: [56, 92, 74, 126, 98, 136, 112],
   usageDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 };

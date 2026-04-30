@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { readSession, clearSession } from "@/lib/session";
 
@@ -8,12 +8,12 @@ export function Header() {
   const router = useRouter();
   const session = readSession();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownRef, setDropdownRef] = useState<HTMLDivElement | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef && !dropdownRef.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     }
@@ -74,7 +74,7 @@ export function Header() {
       </div>
 
       {/* Right: Profile dropdown */}
-      <div style={{ position: "relative" }} ref={dropdownRef}>
+      <div style={{ position: "relative" }} ref={setDropdownRef}>
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
           style={{
