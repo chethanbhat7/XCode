@@ -6,7 +6,7 @@ import { readSession } from "@/lib/session";
 import { Header } from "@/components/Header";
 import { StatCard } from "@/components/ui/stat-card";
 import { MetricsSummary } from "@/components/dashboard/MetricsSummary";
-import { TeamGrid } from "@/components/dashboard/TeamGrid";
+// TeamGrid removed from main dashboard per user preference; teams shown only within projects
 import { ProjectPhases } from "@/components/dashboard/ProjectPhases";
 import { RiskAlerts } from "@/components/dashboard/RiskAlerts";
 import {
@@ -14,6 +14,7 @@ import {
   mockProjects,
   mockRiskAlerts,
 } from "@/lib/mock-data";
+import { sortProjectsByPriority } from "@/lib/project-utils";
 import { TeamMember, Project, ProjectPhase } from "@/lib/dashboard-types";
 import {
   Users,
@@ -49,27 +50,29 @@ export default function ManagerDashboard() {
     totalTokensUsed: 148230,
   };
 
-  // Project phases
+  // Note: project priority computation moved to lib/project-utils for reuse across views.
+
+  // Project phases (bucket by status) — within each phase sort projects by priority desc
   const projectPhases: ProjectPhase[] = [
     {
       id: "phase-planning",
       phase: "planning",
-      projects: mockProjects.filter((p) => p.status === "planning"),
+      projects: sortProjectsByPriority(mockProjects.filter((p) => p.status === "planning")),
     },
     {
-      id: "phase-progress",
+      id: "phase-development",
       phase: "in-progress",
-      projects: mockProjects.filter((p) => p.status === "in-progress"),
+      projects: sortProjectsByPriority(mockProjects.filter((p) => p.status === "in-progress")),
     },
     {
-      id: "phase-review",
+      id: "phase-testing",
       phase: "review",
-      projects: mockProjects.filter((p) => p.status === "review"),
+      projects: sortProjectsByPriority(mockProjects.filter((p) => p.status === "review")),
     },
     {
-      id: "phase-completed",
+      id: "phase-feedback",
       phase: "completed",
-      projects: mockProjects.filter((p) => p.status === "completed"),
+      projects: sortProjectsByPriority(mockProjects.filter((p) => p.status === "completed")),
     },
   ];
 
@@ -166,7 +169,7 @@ export default function ManagerDashboard() {
             icon="📊"
             trend={{ value: 18, isPositive: true }}
             accent="blue"
-            onClick={() => console.log("Projects view")}
+            onClick={() => router.push("/project")}
           />
           <StatCard
             label="Team Commits"
@@ -184,25 +187,7 @@ export default function ManagerDashboard() {
           />
         </div>
 
-        {/* Team Members Section */}
-        <div style={{ marginBottom: "40px" }}>
-          <h2
-            style={{
-              fontSize: "1.25rem",
-              fontWeight: "700",
-              margin: "0 0 20px 0",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <Users size={20} color="#22c55e" /> Team Members
-          </h2>
-          <TeamGrid
-            members={mockTeamMembers}
-            onMemberClick={setSelectedMember}
-          />
-        </div>
+        {/* Team Members removed from main dashboard — show team inside project pages only */}
 
         {/* Risk Alerts */}
         <div style={{ marginBottom: "40px" }}>
@@ -237,7 +222,7 @@ export default function ManagerDashboard() {
           </h2>
           <ProjectPhases
             phases={projectPhases}
-            onProjectClick={setSelectedProject}
+            onProjectClick={(p) => router.push(`/project/${p.id}`)}
           />
         </div>
       </main>

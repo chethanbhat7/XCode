@@ -1,44 +1,16 @@
+"use client";
+
+import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
-import { ProjectDetailView } from "@/components/dashboard/ProjectDetailView";
+import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { mockProjects } from "@/lib/mock-data";
-type ProjectPageProps = {
-  searchParams?: Promise<{
-    id?: string | string[];
-  }>;
-};
+import { sortProjectsByPriority } from "@/lib/project-utils";
 
-async function getProjectId(searchParams?: ProjectPageProps["searchParams"]) {
-  const resolvedSearchParams = await searchParams;
-  const projectId = resolvedSearchParams?.id;
-  return Array.isArray(projectId) ? projectId[0] : projectId;
-}
-
-export default async function ProjectDetailPage({ searchParams }: ProjectPageProps) {
-  const projectId = await getProjectId(searchParams);
-  const project = mockProjects.find((p) => p.id === projectId);
-
-  if (!project) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "linear-gradient(180deg, #071027 0%, #0a1530 40%, #071023 100%)",
-          color: "#e5eefc",
-        }}
-      >
-        <Header />
-        <main style={{ padding: "40px 24px" }}>
-          <div style={{ textAlign: "center" }}>
-            <h1>Project not found</h1>
-            <Link href="/manager" style={{ color: "#7dd3fc", textDecoration: "none" }}>
-              Return to dashboard
-            </Link>
-          </div>
-        </main>
-      </div>
-    );
-  }
+export default function ProjectListPage() {
+  const router = useRouter();
+  const projects = sortProjectsByPriority(mockProjects);
 
   return (
     <div
@@ -49,25 +21,47 @@ export default async function ProjectDetailPage({ searchParams }: ProjectPagePro
       }}
     >
       <Header />
+
       <main style={{ padding: "40px 24px", maxWidth: "1200px", margin: "0 auto" }}>
-        <Link
-          href="/manager"
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", gap: "12px", flexWrap: "wrap" }}>
+          <div>
+            <h1 style={{ fontSize: "2rem", margin: "0 0 6px 0", fontWeight: 800, letterSpacing: "-0.02em" }}>All Projects</h1>
+            <p style={{ margin: 0, color: "#97a6c0" }}>Ordered by priority (highest first)</p>
+          </div>
+          <Link
+            href="/manager"
+            style={{
+              padding: "8px 14px",
+              textDecoration: "none",
+              background: "rgba(255, 255, 255, 0.1)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "8px",
+              color: "#e5eefc",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+            }}
+          >
+            ← Back to manager
+          </Link>
+        </div>
+
+        <div
           style={{
-            display: "inline-block",
-            marginBottom: "24px",
-            padding: "8px 16px",
-            textDecoration: "none",
-            background: "rgba(255, 255, 255, 0.1)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: "6px",
-            color: "#e5eefc",
-            fontSize: "0.9rem",
-            fontWeight: "600",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "16px",
           }}
         >
-          ← Back
-        </Link>
-        <ProjectDetailView project={project} />
+          {projects.map((project) => (
+            <div key={project.id}>
+              <ProjectCard
+                project={project}
+                onProjectClick={(p) => router.push(`/project/${p.id}`)}
+                developerView={false}
+              />
+            </div>
+          ))}
+        </div>
       </main>
     </div>
   );

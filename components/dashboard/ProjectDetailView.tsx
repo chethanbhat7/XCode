@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge-advanced";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -15,6 +15,7 @@ import {
   Zap,
   Clock
 } from "lucide-react";
+import TeamMemberDetail from "@/components/dashboard/TeamMemberDetail";
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -22,6 +23,8 @@ interface ProjectDetailViewProps {
 }
 
 export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) {
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const selectedMember = project.teamMembers.find((m) => m.id === selectedMemberId) ?? null;
   const daysRemaining = Math.ceil(
     (new Date(project.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
   );
@@ -52,6 +55,49 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
         <p style={{ fontSize: "1.05rem", color: "#97a6c0", margin: "0" }}>
           {project.description}
         </p>
+      </div>
+
+      {/* Phase Tracker: Planning -> Development -> Testing -> Feedback */}
+      <div style={{ marginBottom: "20px" }}>
+        {(() => {
+          const phases = ["Planning", "Development", "Testing", "Feedback"];
+          // Map project.status to phase index: planning -> 0, in-progress -> 1, review -> 2, completed -> 3
+          const mapStatusToIndex: Record<string, number> = {
+            planning: 0,
+            "in-progress": 1,
+            review: 2,
+            completed: 3,
+          };
+          const activeIndex = mapStatusToIndex[project.status] ?? 0;
+
+          return (
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              {phases.map((label, i) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: i <= activeIndex ? "linear-gradient(135deg,#22c55e,#16a34a)" : "rgba(255,255,255,0.03)",
+                      color: i <= activeIndex ? "white" : "#97a6c0",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                  <div style={{ fontSize: "0.9rem", color: i <= activeIndex ? "#e5eefc" : "#97a6c0" }}>{label}</div>
+                  {i < phases.length - 1 && (
+                    <div style={{ width: "36px", height: "2px", background: i < activeIndex ? "#22c55e" : "rgba(255,255,255,0.05)", marginLeft: "8px", marginRight: "8px" }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Quick Stats */}
@@ -443,7 +489,7 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
 
         {/* Right Column */}
         <div>
-          {/* Team Members */}
+          {/* Team Members + Detail Panel */}
           <GlassCard>
             <h3
               style={{
@@ -458,58 +504,69 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
             >
               <Users size={18} /> Team Members
             </h3>
-            <div style={{ display: "grid", gap: "12px" }}>
-              {project.teamMembers.map((member) => (
-                <div
-                  key={member.id}
-                  style={{
-                    padding: "12px",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.06)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "8px",
-                      background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1rem",
-                      fontWeight: "700",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {member.avatar || member.name.charAt(0)}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "12px" }}>
+              <div style={{ display: "grid", gap: "12px" }}>
+                {project.teamMembers.map((member) => {
+                  const isSelected = member.id === selectedMemberId;
+                  return (
                     <div
+                      key={member.id}
+                      onClick={() => setSelectedMemberId(member.id === selectedMemberId ? null : member.id)}
                       style={{
-                        fontSize: "0.9rem",
-                        fontWeight: "600",
-                        color: "#e5eefc",
+                        padding: "12px",
+                        background: isSelected ? "rgba(59,130,246,0.08)" : "rgba(255, 255, 255, 0.02)",
+                        borderRadius: "8px",
+                        border: isSelected ? "1px solid rgba(59,130,246,0.2)" : "1px solid rgba(255, 255, 255, 0.06)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        cursor: "pointer",
                       }}
                     >
-                      {member.name}
+                      <div
+                        style={{
+                          width: "40px",
+                          height: "40px",
+                          borderRadius: "8px",
+                          background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1rem",
+                          fontWeight: "700",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {member.avatar || member.name.charAt(0)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: "0.9rem",
+                            fontWeight: "600",
+                            color: "#e5eefc",
+                          }}
+                        >
+                          {member.name}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "#97a6c0",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {member.role}
+                        </div>
+                      </div>
                     </div>
-                    <div
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#97a6c0",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {member.role}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
+
+              <div>
+                <TeamMemberDetail member={selectedMember} />
+              </div>
             </div>
           </GlassCard>
         </div>

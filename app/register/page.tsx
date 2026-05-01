@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -156,7 +157,7 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          <p className="footer-note">Already registered? <a href="/">Sign in</a>.</p>
+          <p className="footer-note">Already registered? <Link href="/">Sign in</Link>.</p>
         </Card>
       </div>
     </main>

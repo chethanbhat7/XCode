@@ -3,340 +3,64 @@
 import React from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge-advanced";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { TeamMember } from "@/lib/dashboard-types";
-import { 
-  Mail, 
-  Users, 
-  TrendingUp,
-  Code,
-  Target,
-  Calendar,
-  Award
-} from "lucide-react";
 
-interface TeamMemberDetailProps {
-  member: TeamMember;
+interface Props {
+  member: TeamMember | null;
 }
 
-export function TeamMemberDetail({ member }: TeamMemberDetailProps) {
-  return (
-    <div style={{ maxWidth: "800px" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "24px",
-          marginBottom: "32px",
-          padding: "24px",
-          background: "rgba(255, 255, 255, 0.02)",
-          borderRadius: "16px",
-          border: "1px solid rgba(255, 255, 255, 0.06)",
-        }}
-      >
-        <div
-          style={{
-            width: "80px",
-            height: "80px",
-            borderRadius: "16px",
-            background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "2rem",
-            fontWeight: "700",
-            flexShrink: 0,
-          }}
-        >
-          {member.avatar || member.name.charAt(0)}
-        </div>
-        <div>
-          <h1
-            style={{
-              fontSize: "1.75rem",
-              fontWeight: "800",
-              color: "#e5eefc",
-              margin: "0 0 8px 0",
-            }}
-          >
-            {member.name}
-          </h1>
-          <p
-            style={{
-              fontSize: "1rem",
-              color: "#97a6c0",
-              margin: "0 0 12px 0",
-            }}
-          >
-            {member.role}
-          </p>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <Badge label={member.team} variant="info" size="sm" />
-            <Badge label={`${member.active_projects} projects`} variant="success" size="sm" />
-          </div>
-        </div>
-      </div>
-
-      {/* Contact & Info */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "16px",
-          marginBottom: "32px",
-        }}
-      >
-        <GlassCard>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "12px",
-            }}
-          >
-            <Mail size={18} color="#3b82f6" />
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: "#97a6c0",
-                textTransform: "uppercase",
-                fontWeight: "600",
-              }}
-            >
-              Email
-            </div>
-          </div>
-          <a
-            href={`mailto:${member.email}`}
-            style={{
-              fontSize: "0.9rem",
-              color: "#3b82f6",
-              textDecoration: "none",
-            }}
-          >
-            {member.email}
-          </a>
-        </GlassCard>
-
-        <GlassCard>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "12px",
-            }}
-          >
-            <Users size={18} color="#22c55e" />
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: "#97a6c0",
-                textTransform: "uppercase",
-                fontWeight: "600",
-              }}
-            >
-              Team
-            </div>
-          </div>
-          <div
-            style={{
-              fontSize: "0.9rem",
-              color: "#e5eefc",
-              fontWeight: "600",
-            }}
-          >
-            {member.team}
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* Performance Metrics */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "16px",
-          marginBottom: "32px",
-        }}
-      >
-        <GlassCard>
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "#97a6c0",
-              textTransform: "uppercase",
-              fontWeight: "600",
-              marginBottom: "12px",
-            }}
-          >
-            Productivity
-          </div>
-          <ProgressBar
-            value={member.departmentProductivity}
-            max={100}
-            showPercent
-            color="green"
-          />
-        </GlassCard>
-
-        <GlassCard>
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "#97a6c0",
-              textTransform: "uppercase",
-              fontWeight: "600",
-              marginBottom: "12px",
-            }}
-          >
-            Deadline Met %
-          </div>
-          <ProgressBar
-            value={member.deadline_met_percentage}
-            max={100}
-            showPercent
-            color={member.deadline_met_percentage > 90 ? "green" : "amber"}
-          />
-        </GlassCard>
-      </div>
-
-      {/* Skills */}
+export default function TeamMemberDetail({ member }: Props) {
+  if (!member) {
+    return (
       <GlassCard>
-        <h3
-          style={{
-            fontSize: "1rem",
-            fontWeight: "700",
-            color: "#e5eefc",
-            margin: "0 0 16px 0",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <Code size={18} /> Skills
-        </h3>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {member.skills.map((skill) => (
-            <div key={skill}>
-              <Badge label={skill} variant="info" size="sm" />
-            </div>
-          ))}
-        </div>
+        <div style={{ color: "#97a6c0" }}>Select a member to view contributions</div>
       </GlassCard>
+    );
+  }
 
-      {/* Additional Info */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: "16px",
-          marginTop: "24px",
-        }}
-      >
-        <GlassCard>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "12px",
-            }}
-          >
-            <Target size={18} color="#fbbf24" />
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: "#97a6c0",
-                textTransform: "uppercase",
-                fontWeight: "600",
-              }}
-            >
-              Active Projects
+  return (
+    <GlassCard>
+      <div style={{ display: "grid", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <div style={{ width: 48, height: 48, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#3b82f6,#1d4ed8)", fontSize: "1.2rem" }}>
+            {member.avatar || member.name.charAt(0)}
+          </div>
+          <div>
+            <div style={{ fontSize: "1rem", fontWeight: 700, color: "#e5eefc" }}>{member.name}</div>
+            <div style={{ fontSize: "0.85rem", color: "#97a6c0" }}>{member.role}</div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <Badge label={`Projects: ${member.active_projects ?? 0}`} />
+          <Badge label={`Pending: ${member.pending_tasks ?? 0}`} />
+          <Badge label={`Deadline Met: ${Math.round(member.deadline_met_percentage ?? 0)}%`} />
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: "0.85rem", color: "#97a6c0", marginBottom: 6 }}>Contributions</div>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: "0.95rem", color: "#e5eefc" }}>Commits: {member.contributions?.commits ?? 0}</div>
+            <div style={{ fontSize: "0.95rem", color: "#e5eefc" }}>Efficiency: {member.contributions?.efficiency ?? 0}%</div>
+            <div style={{ fontSize: "0.95rem", color: "#e5eefc" }}>Backlog: {member.contributions?.backlog ?? member.pending_tasks ?? 0}</div>
+          </div>
+        </div>
+
+        {member.aiUsage && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: "0.85rem", color: "#97a6c0", marginBottom: 6 }}>AI Usage</div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <div style={{ fontSize: "0.95rem", color: "#e5eefc" }}>Prompts: {member.aiUsage.promptsUsed}/{member.aiUsage.promptsLimit}</div>
+              <div style={{ fontSize: "0.95rem", color: "#e5eefc" }}>Tokens: {member.aiUsage.tokensUsed}/{member.aiUsage.tokensLimit}</div>
+              <div style={{ fontSize: "0.95rem", color: "#e5eefc" }}>Sessions: {member.aiUsage.assistantSessions}</div>
+              <div style={{ fontSize: "0.75rem", color: "#97a6c0" }}>Last used: {new Date(member.aiUsage.lastUsed).toLocaleString()}</div>
             </div>
           </div>
-          <div
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: "700",
-              color: "#fbbf24",
-            }}
-          >
-            {member.active_projects}
-          </div>
-        </GlassCard>
-
-        <GlassCard>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "12px",
-            }}
-          >
-            <Calendar size={18} color="#3b82f6" />
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: "#97a6c0",
-                textTransform: "uppercase",
-                fontWeight: "600",
-              }}
-            >
-              Pending Tasks
-            </div>
-          </div>
-          <div
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: "700",
-              color: "#3b82f6",
-            }}
-          >
-            {member.pending_tasks}
-          </div>
-        </GlassCard>
-
-        <GlassCard>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "12px",
-            }}
-          >
-            <Award size={18} color="#22c55e" />
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: "#97a6c0",
-                textTransform: "uppercase",
-                fontWeight: "600",
-              }}
-            >
-              Since
-            </div>
-          </div>
-          <div
-            style={{
-              fontSize: "0.9rem",
-              color: "#22c55e",
-              fontWeight: "600",
-            }}
-          >
-            {new Date(member.joinDate).toLocaleDateString("en-US", {
-              month: "short",
-              year: "numeric",
-            })}
-          </div>
-        </GlassCard>
+        )}
       </div>
-    </div>
+    </GlassCard>
   );
 }
+ 
+export { TeamMemberDetail };
 
-export default TeamMemberDetail;

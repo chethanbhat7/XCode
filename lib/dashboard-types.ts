@@ -8,6 +8,7 @@ export interface Developer {
   skills: string[];
   team: string;
   joinDate: string;
+  aiUsage?: AIUsage;
 }
 
 export interface Task {
@@ -31,10 +32,11 @@ export interface Project {
   startDate: string;
   dueDate: string;
   progress: number;
-  teamMembers: Developer[];
+  teamMembers: TeamMember[];
   tasks: Task[];
   repository?: string;
   commits?: number;
+  aiContribution?: number; // percentage of project contribution by AI (0-100)
 }
 
 export interface CommitActivity {
@@ -77,6 +79,11 @@ export interface TeamMember extends Developer {
   deadline_met_percentage: number;
   active_projects: number;
   pending_tasks: number;
+  contributions?: {
+    commits: number;
+    efficiency: number; // 0-100
+    backlog: number; // pending tasks for this member
+  };
 }
 
 export interface DepartmentMetrics {

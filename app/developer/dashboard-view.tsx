@@ -21,7 +21,7 @@ import {
   mockTeamChat,
   mockDevelopers,
 } from "@/lib/mock-data";
-import { Task, Project } from "@/lib/dashboard-types";
+import { Task } from "@/lib/dashboard-types";
 import {
   CheckCircle2,
   Clock,
@@ -33,12 +33,12 @@ import {
   Calendar,
 } from "lucide-react";
 import { useEffect } from "react";
+import { sortProjectsByPriority } from "@/lib/project-utils";
 
 export default function DeveloperDashboard() {
   const router = useRouter();
   const session = readSession();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [taskFilter, setTaskFilter] = useState<"all" | "todo" | "in-progress" | "review" | "completed">("all");
 
   useEffect(() => {
@@ -61,6 +61,8 @@ export default function DeveloperDashboard() {
   const avgProductivity =
     mockProductivityMetrics.reduce((sum, m) => sum + m.taskCompleted, 0) /
     mockProductivityMetrics.length;
+
+  const sortedProjects = sortProjectsByPriority(mockProjects);
 
   return (
     <div
@@ -86,7 +88,7 @@ export default function DeveloperDashboard() {
             Welcome back, {session.name}
           </h1>
           <p style={{ fontSize: "1rem", color: "#97a6c0", margin: "0" }}>
-            Here's your development dashboard for today
+            Here&apos;s your development dashboard for today
           </p>
         </div>
 
@@ -216,11 +218,11 @@ export default function DeveloperDashboard() {
               <Code2 size={20} color="#22c55e" /> Assigned Projects
             </h2>
             <div style={{ display: "grid", gap: "16px" }}>
-              {mockProjects.slice(0, 2).map((project) => (
+              {sortedProjects.slice(0, 2).map((project) => (
                 <div key={project.id}>
                   <ProjectCard
                     project={project}
-                    onProjectClick={setSelectedProject}
+                    onProjectClick={(p) => router.push(`/project/${p.id}`)}
                     developerView
                   />
                 </div>

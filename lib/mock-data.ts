@@ -10,6 +10,16 @@ import {
   TeamChat,
 } from "./dashboard-types";
 
+// Mock AI Usage (define early so mockDevelopers can use it)
+export const mockAIUsage: AIUsage = {
+  tokensUsed: 45230,
+  tokensLimit: 100000,
+  promptsUsed: 342,
+  promptsLimit: 1000,
+  assistantSessions: 28,
+  lastUsed: "2026-04-30T14:23:00Z",
+};
+
 // Mock Developers
 export const mockDevelopers: Developer[] = [
   {
@@ -51,6 +61,17 @@ export const mockDevelopers: Developer[] = [
     skills: ["Docker", "Kubernetes", "CI/CD", "AWS"],
     team: "DevOps Team",
     joinDate: "2022-09-20",
+  },
+  {
+    id: "ai-1",
+    name: "AI Assistant",
+    email: "ai@company.com",
+    role: "AI Assistant",
+    avatar: "🤖",
+    skills: ["Automation", "Code Gen", "Review"],
+    team: "AI Services",
+    joinDate: "2026-01-01",
+    aiUsage: mockAIUsage,
   },
 ];
 
@@ -118,6 +139,22 @@ export const mockTasks: Task[] = [
   },
 ];
 
+// Mock Team Members with extended info (before mockProjects, as projects need this)
+export const mockTeamMembers: TeamMember[] = mockDevelopers.map((dev, idx) => ({
+  ...dev,
+  manager: "Margaret Johnson",
+  departmentProductivity: 85 + Math.random() * 15,
+  deadline_met_percentage: 90 - Math.random() * 10,
+  active_projects: Math.floor(2 + Math.random() * 3),
+  pending_tasks: Math.floor(1 + Math.random() * 5),
+  aiUsage: dev.id === "ai-1" ? mockAIUsage : { ...mockAIUsage, tokensUsed: Math.floor(Math.random()*2000), promptsUsed: Math.floor(Math.random()*30), assistantSessions: Math.floor(Math.random()*5), lastUsed: mockAIUsage.lastUsed, tokensLimit: mockAIUsage.tokensLimit, promptsLimit: mockAIUsage.promptsLimit },
+  contributions: {
+    commits: Math.floor(10 + Math.random() * 120),
+    efficiency: Math.floor(60 + Math.random() * 30),
+    backlog: Math.floor(Math.random() * 6),
+  },
+}));
+
 // Mock Projects
 export const mockProjects: Project[] = [
   {
@@ -128,10 +165,11 @@ export const mockProjects: Project[] = [
     startDate: "2026-03-01",
     dueDate: "2026-06-30",
     progress: 65,
-    teamMembers: mockDevelopers.slice(0, 3),
+    teamMembers: [mockTeamMembers[0], mockTeamMembers[1], mockTeamMembers[2], mockTeamMembers.find(m=>m.id==="ai-1")!],
     tasks: mockTasks.slice(0, 4),
     repository: "https://github.com/company/dashboard",
     commits: 342,
+    aiContribution: 12, // 12% contributed by AI
   },
   {
     id: "proj-2",
@@ -141,10 +179,11 @@ export const mockProjects: Project[] = [
     startDate: "2026-02-15",
     dueDate: "2026-05-31",
     progress: 48,
-    teamMembers: mockDevelopers.slice(1, 4),
+    teamMembers: [mockTeamMembers[1], mockTeamMembers[2], mockTeamMembers[3], mockTeamMembers.find(m=>m.id==="ai-1")!],
     tasks: mockTasks.slice(2, 5),
     repository: "https://github.com/company/mobile",
     commits: 218,
+    aiContribution: 8,
   },
   {
     id: "proj-3",
@@ -154,10 +193,11 @@ export const mockProjects: Project[] = [
     startDate: "2026-04-01",
     dueDate: "2026-08-31",
     progress: 15,
-    teamMembers: [mockDevelopers[0], mockDevelopers[1], mockDevelopers[3]],
+    teamMembers: [mockTeamMembers[0], mockTeamMembers[1], mockTeamMembers[3], mockTeamMembers.find(m=>m.id==="ai-1")!],
     tasks: [],
     repository: "https://github.com/company/microservices",
     commits: 0,
+    aiContribution: 0,
   },
 ];
 
@@ -171,16 +211,6 @@ export const mockCommitActivity: CommitActivity[] = [
   { date: "2026-04-25", count: 7, message: "Feature development" },
   { date: "2026-04-24", count: 2, message: "Hotfix deployment" },
 ];
-
-// Mock AI Usage
-export const mockAIUsage: AIUsage = {
-  tokensUsed: 45230,
-  tokensLimit: 100000,
-  promptsUsed: 342,
-  promptsLimit: 1000,
-  assistantSessions: 28,
-  lastUsed: "2026-04-30T14:23:00Z",
-};
 
 // Mock Productivity Metrics
 export const mockProductivityMetrics: ProductivityMetric[] = [
@@ -217,16 +247,6 @@ export const mockRiskAlerts: RiskAlert[] = [
     timestamp: "2026-04-30T11:20:00Z",
   },
 ];
-
-// Mock Team Members with extended info
-export const mockTeamMembers: TeamMember[] = mockDevelopers.map((dev, idx) => ({
-  ...dev,
-  manager: "Margaret Johnson",
-  departmentProductivity: 85 + Math.random() * 15,
-  deadline_met_percentage: 90 - Math.random() * 10,
-  active_projects: Math.floor(2 + Math.random() * 3),
-  pending_tasks: Math.floor(1 + Math.random() * 5),
-}));
 
 // Mock Team Chat
 export const mockTeamChat: TeamChat[] = [
