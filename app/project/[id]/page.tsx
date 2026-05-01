@@ -48,24 +48,25 @@ export default async function ProjectDetailById({ params }: ProjectDetailByIdPro
       }}
     >
       <Header />
-      <main style={{ padding: "40px 24px", maxWidth: "1200px", margin: "0 auto" }}>
-        <Link
-          href="/manager"
-          style={{
-            display: "inline-block",
-            marginBottom: "24px",
-            padding: "8px 16px",
-            textDecoration: "none",
-            background: "rgba(255, 255, 255, 0.1)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: "6px",
-            color: "#e5eefc",
-            fontSize: "0.9rem",
-            fontWeight: "600",
-          }}
-        >
-          ← Back
-        </Link>
+      <main style={{ padding: "24px 0" }}>
+        <div style={{ paddingLeft: "24px", paddingRight: "24px", marginBottom: "24px" }}>
+          <Link
+            href="/manager"
+            style={{
+              display: "inline-block",
+              padding: "8px 16px",
+              textDecoration: "none",
+              background: "rgba(255, 255, 255, 0.1)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "6px",
+              color: "#e5eefc",
+              fontSize: "0.9rem",
+              fontWeight: "600",
+            }}
+          >
+            ← Back
+          </Link>
+        </div>
         <ProjectDetailView project={project} />
       </main>
     </div>

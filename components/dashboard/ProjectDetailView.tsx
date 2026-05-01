@@ -52,7 +52,7 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
   const inProgressTasks = project.tasks.filter((t) => t.status === "in-progress").length;
 
   return (
-    <div style={{ maxWidth: "900px" }}>
+    <div style={{ width: "100%", padding: "32px 24px" }}>
       {/* Header */}
       <div style={{ marginBottom: "32px" }}>
         <div style={{ marginBottom: "16px" }}>
