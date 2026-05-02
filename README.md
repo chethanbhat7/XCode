@@ -232,3 +232,46 @@ X Code improves:
 ## Core Innovation
 
 **GitHub for developer workflow intelligence + Custom VS Code chatbot for AI usage and contribution tracking**
+
+---
+
+## Getting Started
+
+### 1. Prerequisites
+- Node.js 18+
+- MongoDB running locally or on Atlas
+- Gemini API Key ([Get it here](https://aistudio.google.com/app/apikey))
+
+### 2. Environment Setup
+Create a `.env.local` file in the root directory and add the following:
+```env
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB=xcode_db
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+GITHUB_OAUTH_CALLBACK_URL=http://localhost:3000/api/auth/github
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### 3. Installation & Running the Web App
+```bash
+npm install
+npm run dev
+```
+
+### 4. VS Code Extension Setup
+The custom assistant is located in the `vscode-extension` folder.
+```bash
+cd vscode-extension
+npm install
+npm run compile
+```
+- Open the `vscode-extension` folder in VS Code.
+- Press `F5` to launch a new VS Code window with the extension enabled.
+- Find the **X Code** icon in the Activity Bar to start using the assistant.
+
+## AI Usage Tracking
+The system monitors:
+- **Tokens Used**: Real-time consumption tracking.
+- **Prompts Count**: Number of AI interactions.
+- **Contribution %**: AI's part in the overall project development.

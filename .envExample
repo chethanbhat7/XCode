@@ -1,0 +1,11 @@
+# MongoDB Connection
+MONGODB_URI=""
+MONGODB_DB=""
+
+# GitHub OAuth Configuration
+GITHUB_CLIENT_ID=""
+GITHUB_CLIENT_SECRET=""
+GITHUB_OAUTH_CALLBACK_URL=""
+
+
+GEMINI_API_KEY=

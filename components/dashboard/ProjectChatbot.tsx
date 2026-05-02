@@ -95,7 +95,7 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
     return `I can help you with ${project.name}! Try asking me about:\n• Project progress or status\n• Team members\n• Deadlines and timelines\n• Tasks and to-dos\n• Creating new tasks\n• Repository info\n\nWhat would you like to know?`;
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMsg: Message = {
@@ -109,43 +109,119 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
     setInput("");
     setLoading(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(input);
+    try {
+      const chatHistory = messages.map(m => ({
+        role: m.type === "user" ? "user" : "model",
+        parts: [{ text: m.content }]
+      }));
+
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: input,
+          history: chatHistory
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: Date.now().toString(),
         type: "ai",
-        content: aiResponse,
+        content: data.text,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMsg]);
+
+      // Update AI usage metrics
+      await fetch("/api/ai/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tokens: Math.floor(data.text.length / 4) + Math.floor(input.length / 4), // Rough estimate
+          prompts: 1
+        }),
+      });
+
+    } catch (error: any) {
+      const errorMsg: Message = {
+        id: Date.now().toString(),
+        type: "ai",
+        content: `Error: ${error.message || "Something went wrong. Please check if your API key is configured."}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
-    <GlassCard style={{ display: "flex", flexDirection: "column", height: "600px" }}>
+    <GlassCard style={{ 
+      display: "flex", 
+      flexDirection: "column", 
+      height: "600px",
+      padding: "0",
+      overflow: "hidden",
+      border: "1px solid rgba(255, 255, 255, 0.08)",
+      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)"
+    }}>
+      {/* Header */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "8px",
-          marginBottom: "16px",
-          paddingBottom: "12px",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          justifyContent: "space-between",
+          padding: "16px 20px",
+          background: "linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
         }}
       >
-        <MessageCircle size={18} color="#3b82f6" />
-        <h3
-          style={{
-            fontSize: "1.05rem",
-            fontWeight: "700",
-            color: "#e5eefc",
-            margin: "0",
-          }}
-        >
-          Project Assistant
-        </h3>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+            background: "rgba(59, 130, 246, 0.2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "1px solid rgba(59, 130, 246, 0.3)"
+          }}>
+            <MessageCircle size={18} color="#60a5fa" />
+          </div>
+          <div>
+            <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "#f1f5f9", margin: "0" }}>
+              Project Assistant
+            </h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981" }} />
+              <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "500" }}>AI Online</span>
+            </div>
+          </div>
+        </div>
+        {onTaskCreate && (
+           <button 
+            onClick={() => onTaskCreate({})}
+            style={{
+              padding: "6px",
+              borderRadius: "6px",
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              color: "#94a3b8",
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+            title="New Task"
+           >
+             <Plus size={16} />
+           </button>
+        )}
       </div>
 
       {/* Messages Area */}
@@ -154,10 +230,11 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
         style={{
           flex: 1,
           overflowY: "auto",
-          display: "grid",
-          gap: "12px",
-          marginBottom: "12px",
-          paddingRight: "4px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          padding: "20px",
+          scrollBehavior: "smooth"
         }}
       >
         {messages.map((msg) => (
@@ -166,26 +243,29 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
             style={{
               display: "flex",
               justifyContent: msg.type === "user" ? "flex-end" : "flex-start",
+              animation: "slideIn 0.3s ease-out forwards"
             }}
           >
             <div
               style={{
-                maxWidth: "80%",
-                padding: "10px 12px",
-                borderRadius: "8px",
+                maxWidth: "85%",
+                padding: "12px 16px",
+                borderRadius: msg.type === "user" ? "16px 16px 2px 16px" : "16px 16px 16px 2px",
                 background:
                   msg.type === "user"
-                    ? "linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.1))"
-                    : "rgba(255, 255, 255, 0.05)",
+                    ? "linear-gradient(135deg, #2563eb, #1d4ed8)"
+                    : "rgba(30, 41, 59, 0.7)",
+                backdropFilter: "blur(4px)",
                 border:
                   msg.type === "user"
-                    ? "1px solid rgba(59, 130, 246, 0.2)"
-                    : "1px solid rgba(255, 255, 255, 0.06)",
-                fontSize: "0.85rem",
-                color: "#e5eefc",
-                lineHeight: "1.4",
+                    ? "1px solid rgba(59, 130, 246, 0.5)"
+                    : "1px solid rgba(255, 255, 255, 0.1)",
+                fontSize: "0.875rem",
+                color: "#f1f5f9",
+                lineHeight: "1.5",
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
+                boxShadow: msg.type === "user" ? "0 4px 12px rgba(37, 99, 235, 0.2)" : "0 4px 12px rgba(0, 0, 0, 0.1)"
               }}
             >
               {msg.content}
@@ -196,71 +276,137 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
             <div
               style={{
-                padding: "10px 12px",
-                borderRadius: "8px",
-                background: "rgba(255, 255, 255, 0.05)",
-                border: "1px solid rgba(255, 255, 255, 0.06)",
-                fontSize: "0.85rem",
-                color: "#97a6c0",
+                padding: "12px 16px",
+                borderRadius: "16px 16px 16px 2px",
+                background: "rgba(30, 41, 59, 0.7)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                fontSize: "0.875rem",
+                color: "#94a3b8",
+                display: "flex",
+                gap: "4px"
               }}
             >
-              <span style={{ animation: "pulse 1.5s infinite" }}>●●●</span>
+              <div className="dot" style={{ animationDelay: "0s" }} />
+              <div className="dot" style={{ animationDelay: "0.2s" }} />
+              <div className="dot" style={{ animationDelay: "0.4s" }} />
             </div>
           </div>
         )}
       </div>
 
+      {/* Suggested Questions */}
+      {!loading && messages.length < 3 && (
+        <div style={{ padding: "0 20px 10px 20px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {["Project progress?", "Team details?", "Next deadline?", "New task"].map((q) => (
+            <button
+              key={q}
+              onClick={() => { setInput(q); }}
+              style={{
+                padding: "4px 10px",
+                borderRadius: "20px",
+                background: "rgba(59, 130, 246, 0.1)",
+                border: "1px solid rgba(59, 130, 246, 0.2)",
+                color: "#60a5fa",
+                fontSize: "0.75rem",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Input Area */}
-      <div style={{ display: "flex", gap: "8px" }}>
-        <input
-          type="text"
-          placeholder="Ask about project or type 'add task: ...'..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleSend()}
-          style={{
-            flex: 1,
-            padding: "8px 12px",
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: "6px",
-            color: "#e5eefc",
-            fontSize: "0.85rem",
-            outline: "none",
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.3)";
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-          }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading || !input.trim()}
-          style={{
-            padding: "8px 12px",
-            background: input.trim() ? "rgba(59, 130, 246, 0.2)" : "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(59, 130, 246, 0.3)",
-            borderRadius: "6px",
-            color: "#3b82f6",
-            cursor: input.trim() ? "pointer" : "default",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "0.85rem",
-            fontWeight: "600",
-            transition: "all 0.2s",
-          }}
+      <div style={{ 
+        padding: "16px 20px", 
+        borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "rgba(15, 23, 42, 0.3)"
+      }}>
+        <div style={{ 
+          display: "flex", 
+          gap: "10px",
+          background: "rgba(255, 255, 255, 0.03)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "12px",
+          padding: "4px 4px 4px 12px",
+          transition: "all 0.3s ease"
+        }}
+        className="input-container"
         >
-          <Send size={16} />
-        </button>
+          <input
+            type="text"
+            placeholder="Ask about project..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            style={{
+              flex: 1,
+              padding: "8px 0",
+              background: "transparent",
+              border: "none",
+              color: "#f1f5f9",
+              fontSize: "0.875rem",
+              outline: "none",
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+            style={{
+              width: "36px",
+              height: "36px",
+              background: input.trim() ? "#2563eb" : "rgba(255, 255, 255, 0.05)",
+              borderRadius: "10px",
+              color: "white",
+              cursor: input.trim() ? "pointer" : "default",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              border: "none",
+              transform: input.trim() ? "scale(1)" : "scale(0.95)"
+            }}
+          >
+            <Send size={18} />
+          </button>
+        </div>
       </div>
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .dot {
+          width: 6px;
+          height: 6px;
+          background: #64748b;
+          border-radius: 50%;
+          animation: bounce 1.4s infinite ease-in-out both;
+        }
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1.0); }
+        }
+        .input-container:focus-within {
+          border-color: rgba(59, 130, 246, 0.5) !important;
+          background: rgba(255, 255, 255, 0.06) !important;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        ::-webkit-scrollbar {
+          width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.2);
         }
       `}</style>
     </GlassCard>
