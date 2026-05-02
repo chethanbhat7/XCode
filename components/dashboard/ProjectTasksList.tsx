@@ -5,6 +5,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge-advanced";
 import { Task } from "@/lib/dashboard-types";
 import { CheckCircle2, Circle, AlertCircle, Zap } from "lucide-react";
+import { formatDate } from "@/lib/date-formatter";
 
 interface ProjectTasksListProps {
   tasks: Task[];
@@ -205,7 +206,7 @@ export default function ProjectTasksList({ tasks, onTaskUpdate }: ProjectTasksLi
               </div>
 
               <div style={{ fontSize: "0.75rem", color: "#97a6c0" }}>
-                Due: {new Date(task.dueDate).toLocaleDateString()}
+                Due: {formatDate(task.dueDate)}
               </div>
 
               <div style={{ fontSize: "0.75rem", color: "#97a6c0" }}>{task.assignee.name}</div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Project, Task } from "@/lib/dashboard-types";
 import { Send, MessageCircle, Plus } from "lucide-react";
+import { formatDate, getDaysUntil } from "@/lib/date-formatter";
 
 interface Message {
   id: string;
@@ -74,10 +75,8 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
 
     // Timeline/deadline
     if (lowerInput.includes("deadline") || lowerInput.includes("due") || lowerInput.includes("timeline")) {
-      const daysRemaining = Math.ceil(
-        (new Date(project.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-      );
-      return `${project.name} is due on ${new Date(project.dueDate).toLocaleDateString()}. That's approximately ${daysRemaining} days from now.`;
+      const daysRemaining = getDaysUntil(project.dueDate);
+      return `${project.name} is due on ${formatDate(project.dueDate)}. That's approximately ${daysRemaining} days from now.`;
     }
 
     // Tasks list

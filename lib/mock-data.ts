@@ -140,20 +140,96 @@ export const mockTasks: Task[] = [
 ];
 
 // Mock Team Members with extended info (before mockProjects, as projects need this)
-export const mockTeamMembers: TeamMember[] = mockDevelopers.map((dev, idx) => ({
-  ...dev,
-  manager: "Margaret Johnson",
-  departmentProductivity: 85 + Math.random() * 15,
-  deadline_met_percentage: 90 - Math.random() * 10,
-  active_projects: Math.floor(2 + Math.random() * 3),
-  pending_tasks: Math.floor(1 + Math.random() * 5),
-  aiUsage: dev.id === "ai-1" ? mockAIUsage : { ...mockAIUsage, tokensUsed: Math.floor(Math.random()*2000), promptsUsed: Math.floor(Math.random()*30), assistantSessions: Math.floor(Math.random()*5), lastUsed: mockAIUsage.lastUsed, tokensLimit: mockAIUsage.tokensLimit, promptsLimit: mockAIUsage.promptsLimit },
-  contributions: {
-    commits: Math.floor(10 + Math.random() * 120),
-    efficiency: Math.floor(60 + Math.random() * 30),
-    backlog: Math.floor(Math.random() * 6),
-  },
-}));
+export const mockTeamMembers: TeamMember[] = mockDevelopers.map((dev, idx) => {
+  const memberMetrics = [
+    {
+      departmentProductivity: 97,
+      deadlineMetPercentage: 94,
+      activeProjects: 4,
+      pendingTasks: 2,
+      commits: 98,
+      efficiency: 86,
+      backlog: 1,
+      tokensUsed: 1820,
+      promptsUsed: 24,
+      assistantSessions: 3,
+    },
+    {
+      departmentProductivity: 93,
+      deadlineMetPercentage: 91,
+      activeProjects: 3,
+      pendingTasks: 3,
+      commits: 72,
+      efficiency: 81,
+      backlog: 2,
+      tokensUsed: 1460,
+      promptsUsed: 19,
+      assistantSessions: 2,
+    },
+    {
+      departmentProductivity: 95,
+      deadlineMetPercentage: 89,
+      activeProjects: 3,
+      pendingTasks: 1,
+      commits: 64,
+      efficiency: 83,
+      backlog: 1,
+      tokensUsed: 1280,
+      promptsUsed: 17,
+      assistantSessions: 2,
+    },
+    {
+      departmentProductivity: 90,
+      deadlineMetPercentage: 96,
+      activeProjects: 2,
+      pendingTasks: 1,
+      commits: 58,
+      efficiency: 88,
+      backlog: 0,
+      tokensUsed: 960,
+      promptsUsed: 11,
+      assistantSessions: 1,
+    },
+    {
+      departmentProductivity: 100,
+      deadlineMetPercentage: 100,
+      activeProjects: 5,
+      pendingTasks: 0,
+      commits: 120,
+      efficiency: 99,
+      backlog: 0,
+      tokensUsed: 45230,
+      promptsUsed: 342,
+      assistantSessions: 28,
+    },
+  ][idx];
+
+  return {
+    ...dev,
+    manager: "Margaret Johnson",
+    departmentProductivity: memberMetrics.departmentProductivity,
+    deadline_met_percentage: memberMetrics.deadlineMetPercentage,
+    active_projects: memberMetrics.activeProjects,
+    pending_tasks: memberMetrics.pendingTasks,
+    aiUsage:
+      dev.id === "ai-1"
+        ? mockAIUsage
+        : {
+            ...mockAIUsage,
+            tokensUsed: memberMetrics.tokensUsed,
+            promptsUsed: memberMetrics.promptsUsed,
+            assistantSessions: memberMetrics.assistantSessions,
+            lastUsed: mockAIUsage.lastUsed,
+            tokensLimit: mockAIUsage.tokensLimit,
+            promptsLimit: mockAIUsage.promptsLimit,
+          },
+    contributions: {
+      commits: memberMetrics.commits,
+      efficiency: memberMetrics.efficiency,
+      backlog: memberMetrics.backlog,
+    },
+  };
+});
 
 // Mock Projects
 export const mockProjects: Project[] = [

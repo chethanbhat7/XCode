@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { readSession, saveSession } from "@/lib/session";
+import { readSession, saveSession, validateCredentials } from "@/lib/session";
 import { validateEmail, validatePassword } from "@/lib/validation";
 
 export default function LoginPage() {
@@ -45,23 +45,18 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // Client-side auth using localStorage
+      const user = validateCredentials(email, password);
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        setGeneralError(result.error || "Login failed");
+      if (!user) {
+        setGeneralError("Invalid email or password");
         setLoading(false);
         return;
       }
 
       // Save session and redirect
-      saveSession({ email: result.user.email, role: result.user.role, name: result.user.name });
-      router.push(result.user.role === "developer" ? "/developer" : "/manager");
+      saveSession({ email: user.email, role: user.role, name: user.name });
+      router.push(user.role === "developer" ? "/developer" : "/manager");
     } catch (err) {
       console.error("Login error:", err);
       setGeneralError("Failed to sign in. Please try again.");

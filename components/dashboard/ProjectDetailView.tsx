@@ -13,11 +13,17 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  Clock
+  Clock,
+  Plus,
+  BarChart3
 } from "lucide-react";
 import TeamMemberDetail from "@/components/dashboard/TeamMemberDetail";
 import ProjectTasksList from "@/components/dashboard/ProjectTasksList";
 import ProjectChatbot from "@/components/dashboard/ProjectChatbot";
+import AddTaskForm from "@/components/dashboard/AddTaskForm";
+import AnalyticsDashboard from "@/components/dashboard/AnalyticsDashboard";
+import { getBestCandidate } from "@/lib/task-allocation";
+import { formatDate } from "@/lib/date-formatter";
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -27,9 +33,14 @@ interface ProjectDetailViewProps {
 export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [tasks, setTasks] = useState(project.tasks);
+  const [showAddTaskForm, setShowAddTaskForm] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const selectedMember = project.teamMembers.find((m) => m.id === selectedMemberId) ?? null;
 
   const handleTaskCreate = (newTask: Partial<Task>) => {
+    // Use ML-based allocation to assign task to best candidate
+    const bestCandidate = getBestCandidate(newTask as Task, project.teamMembers, tasks);
+    
     const task: Task = {
       id: `task-${Date.now()}`,
       title: newTask.title || "New Task",
@@ -37,9 +48,9 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
       status: (newTask.status as any) || "todo",
       priority: (newTask.priority as any) || "medium",
       dueDate: newTask.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      assignee: project.teamMembers[0],
+      assignee: bestCandidate || project.teamMembers[0],
       projectId: project.id,
-      estimatedHours: 8,
+      estimatedHours: newTask.estimatedHours || 8,
       actualHours: 0,
     };
     setTasks((prev) => [...prev, task]);
@@ -52,28 +63,95 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
   const inProgressTasks = project.tasks.filter((t) => t.status === "in-progress").length;
 
   return (
-    <div style={{ width: "100%", padding: "32px 24px" }}>
+    <div style={{ width: "100%", padding: "40px 32px", background: "linear-gradient(180deg, #0a1420 0%, #0f1823 50%, #0a1420 100%)" }}>
       {/* Header */}
-      <div style={{ marginBottom: "32px" }}>
-        <div style={{ marginBottom: "16px" }}>
-          <Badge 
-            label={project.status} 
-            variant={project.status === "completed" ? "success" : project.status === "in-progress" ? "info" : "default"}
-          />
+      <div style={{ marginBottom: "48px" }}>
+        <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "24px" }}>
+          <div style={{ flex: 1 }}>
+            <Badge 
+              label={project.status} 
+              variant={project.status === "completed" ? "success" : project.status === "in-progress" ? "info" : "default"}
+            />
+            <h1
+              style={{
+                fontSize: "2.8rem",
+                fontWeight: "900",
+                color: "#e5eefc",
+                margin: "16px 0 12px 0",
+                letterSpacing: "-0.02em",
+                lineHeight: "1.2",
+              }}
+            >
+              {project.name}
+            </h1>
+            <p style={{ fontSize: "1.1rem", color: "#97a6c0", margin: "0", lineHeight: "1.5", maxWidth: "600px" }}>
+              {project.description}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "12px", flexShrink: 0 }}>
+            <button
+              onClick={() => setShowAddTaskForm(true)}
+              style={{
+                padding: "10px 20px",
+                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                border: "none",
+                borderRadius: "8px",
+                color: "#fff",
+                fontWeight: "700",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+              }}
+              onMouseEnter={(e: any) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 8px 20px rgba(34, 197, 94, 0.4)";
+              }}
+              onMouseLeave={(e: any) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 197, 94, 0.3)";
+              }}
+            >
+              <Plus size={18} /> Add Task
+            </button>
+            <button
+              onClick={() => setShowAnalytics(!showAnalytics)}
+              style={{
+                padding: "10px 20px",
+                background: showAnalytics ? "linear-gradient(135deg, #3b82f6, #1d4ed8)" : "rgba(255, 255, 255, 0.08)",
+                border: "1px solid " + (showAnalytics ? "rgba(59, 130, 246, 0.3)" : "rgba(255, 255, 255, 0.15)"),
+                borderRadius: "8px",
+                color: "#e5eefc",
+                fontWeight: "700",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+              onMouseEnter={(e: any) => {
+                if (!showAnalytics) {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.25)";
+                }
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={(e: any) => {
+                if (!showAnalytics) {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                }
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              <BarChart3 size={18} /> Analytics
+            </button>
+          </div>
         </div>
-        <h1
-          style={{
-            fontSize: "2.2rem",
-            fontWeight: "800",
-            color: "#e5eefc",
-            margin: "0 0 12px 0",
-          }}
-        >
-          {project.name}
-        </h1>
-        <p style={{ fontSize: "1.05rem", color: "#97a6c0", margin: "0" }}>
-          {project.description}
-        </p>
       </div>
 
       {/* Phase Tracker: Planning -> Development -> Testing -> Feedback */}
@@ -174,8 +252,7 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
             </div>
           </div>
           <div style={{ fontSize: "0.75rem", color: "#97a6c0" }}>
-            {new Date(project.startDate).toLocaleDateString()} -{" "}
-            {new Date(project.dueDate).toLocaleDateString()}
+            {formatDate(project.startDate)} - {formatDate(project.dueDate)}
           </div>
         </GlassCard>
 
@@ -283,6 +360,13 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
           </div>
         </GlassCard>
       </div>
+
+      {/* Analytics Dashboard - Conditional */}
+      {showAnalytics && (
+        <div style={{ marginBottom: "32px" }}>
+          <AnalyticsDashboard project={{ ...project, tasks }} />
+        </div>
+      )}
 
       {/* Main Content: 3-Column Layout */}
       <div
@@ -458,6 +542,15 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
         {/* Right Column: Chatbot */}
         <ProjectChatbot project={{ ...project, tasks }} onTaskCreate={handleTaskCreate} />
       </div>
+
+      {/* Add Task Form Modal */}
+      {showAddTaskForm && (
+        <AddTaskForm 
+          onClose={() => setShowAddTaskForm(false)}
+          onSubmit={handleTaskCreate}
+          teamMembers={project.teamMembers}
+        />
+      )}
     </div>
   );
 }

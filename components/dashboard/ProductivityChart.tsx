@@ -5,6 +5,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { ProductivityMetric } from "@/lib/dashboard-types";
 import { TrendingUp, Activity } from "lucide-react";
+import { formatDate } from "@/lib/date-formatter";
 
 interface ProductivityChartProps {
   metrics: ProductivityMetric[];
@@ -90,9 +91,7 @@ export function ProductivityChart({ metrics }: ProductivityChartProps) {
                 textAlign: "center",
               }}
             >
-              {new Date(metric.date).toLocaleDateString("en-US", {
-                weekday: "short",
-              })}
+              {formatDate(metric.date)}
             </span>
 
             {/* Stats */}

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
+import { formatMonthDay } from "@/lib/date-formatter";
 import { CommitActivity } from "@/lib/dashboard-types";
 import { GitCommit } from "lucide-react";
 
@@ -89,7 +90,7 @@ export function CommitHeatmap({ activity, height = "200px" }: CommitHeatmapProps
                 textOverflow: "ellipsis",
               }}
             >
-              {new Date(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              {formatMonthDay(day.date)}
             </span>
             <span
               style={{

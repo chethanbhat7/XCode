@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Task } from "@/lib/dashboard-types";
 import { Badge } from "@/components/ui/badge-advanced";
 import { X, MessageSquare, FileText, Clock, AlertCircle } from "lucide-react";
+import { formatDate } from "@/lib/date-formatter";
 
 interface TaskDetailSideProps {
   task: Task;
@@ -245,7 +246,7 @@ export function TaskDetailSide({ task, onClose }: TaskDetailSideProps) {
                       fontWeight: "600",
                     }}
                   >
-                    {new Date(task.dueDate).toLocaleDateString()}
+                    {formatDate(task.dueDate)}
                   </div>
                   {daysRemaining < 3 && (
                     <div

@@ -12,6 +12,7 @@ import {
   Flag,
   ChevronRight,
 } from "lucide-react";
+import { formatDate } from "@/lib/date-formatter";
 
 interface TaskListProps {
   tasks: Task[];
@@ -136,7 +137,7 @@ export function TaskList({ tasks, onTaskClick, filter = "all", limit }: TaskList
                         padding: "4px 0",
                       }}
                     >
-                      Due: {new Date(task.dueDate).toLocaleDateString()}
+                      Due: {formatDate(task.dueDate)}
                     </span>
                   </div>
                 </div>

@@ -1,20 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { readSession } from "@/lib/session";
+import { readSession, type SessionUser } from "@/lib/session";
 import { Header } from "@/components/Header";
 import { StatCard } from "@/components/ui/stat-card";
 import { MetricsSummary } from "@/components/dashboard/MetricsSummary";
 // TeamGrid removed from main dashboard per user preference; teams shown only within projects
 import { ProjectPhases } from "@/components/dashboard/ProjectPhases";
 import { RiskAlerts } from "@/components/dashboard/RiskAlerts";
+import CreateProjectForm from "@/components/dashboard/CreateProjectForm";
 import {
   mockTeamMembers,
   mockProjects,
   mockRiskAlerts,
 } from "@/lib/mock-data";
 import { sortProjectsByPriority } from "@/lib/project-utils";
+import { fetchUserOrgs, fetchUserRepos, fetchRepoMembers } from "@/lib/github";
 import { TeamMember, Project, ProjectPhase } from "@/lib/dashboard-types";
 import {
   Users,
@@ -23,27 +25,76 @@ import {
   AlertTriangle,
   Plus,
 } from "lucide-react";
-import { useEffect } from "react";
 
 export default function ManagerDashboard() {
   const router = useRouter();
-  const session = readSession();
+  const [session, setSession] = useState<SessionUser | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const [githubOrgs, setGithubOrgs] = useState<any[]>([]);
+  const [githubRepos, setGithubRepos] = useState<any[]>([]);
+  const [detectedMembers, setDetectedMembers] = useState<any[]>([]);
+  const [isLoadingGithub, setIsLoadingGithub] = useState(false);
 
   useEffect(() => {
-    if (!session) {
+    const storedSession = readSession();
+    if (!storedSession) {
       router.replace("/");
+      return;
     }
-  }, [router, session]);
+    if (storedSession.role !== "manager") {
+      router.replace(storedSession.role === "developer" ? "/developer" : "/");
+      return;
+    }
+    setSession(storedSession);
+
+    if (storedSession.githubToken) {
+      const loadGithubData = async () => {
+        setIsLoadingGithub(true);
+        try {
+          const [orgs, repos] = await Promise.all([
+            fetchUserOrgs(storedSession.githubToken!),
+            fetchUserRepos(storedSession.githubToken!)
+          ]);
+          setGithubOrgs(orgs);
+          setGithubRepos(repos);
+
+          // Automatically detect members from the first repo found
+          if (repos.length > 0) {
+            const repo = repos[0];
+            const members = await fetchRepoMembers(
+              storedSession.githubToken!, 
+              repo.owner?.login || session?.githubUsername || "", 
+              repo.name
+            );
+            setDetectedMembers(members);
+          }
+        } catch (error) {
+          console.error("Error loading GitHub data:", error);
+        } finally {
+          setIsLoadingGithub(false);
+        }
+      };
+      loadGithubData();
+    }
+  }, [router, session?.githubUsername]);
 
   if (!session) return null;
 
+  // Handler for creating new projects
+  const handleProjectCreate = (newProject: Project) => {
+    setProjects([...projects, newProject]);
+    setShowCreateForm(false);
+    router.push(`/project/${newProject.id}`);
+  };
+
   // Department metrics
   const departmentMetrics = {
-    totalProjects: mockProjects.length,
-    activeProjects: mockProjects.filter((p) => p.status !== "completed").length,
-    completedProjects: mockProjects.filter((p) => p.status === "completed").length,
+    totalProjects: projects.length,
+    activeProjects: projects.filter((p) => p.status !== "completed").length,
+    completedProjects: projects.filter((p) => p.status === "completed").length,
     teamSize: mockTeamMembers.length,
     averageProductivity: mockTeamMembers.reduce((sum, m) => sum + m.departmentProductivity, 0) / mockTeamMembers.length,
     avgDeadlineMet: mockTeamMembers.reduce((sum, m) => sum + m.deadline_met_percentage, 0) / mockTeamMembers.length,
@@ -57,26 +108,26 @@ export default function ManagerDashboard() {
     {
       id: "phase-planning",
       phase: "planning",
-      projects: sortProjectsByPriority(mockProjects.filter((p) => p.status === "planning")),
+      projects: sortProjectsByPriority(projects.filter((p) => p.status === "planning")),
     },
     {
       id: "phase-development",
       phase: "in-progress",
-      projects: sortProjectsByPriority(mockProjects.filter((p) => p.status === "in-progress")),
+      projects: sortProjectsByPriority(projects.filter((p) => p.status === "in-progress")),
     },
     {
       id: "phase-testing",
       phase: "review",
-      projects: sortProjectsByPriority(mockProjects.filter((p) => p.status === "review")),
+      projects: sortProjectsByPriority(projects.filter((p) => p.status === "review")),
     },
     {
       id: "phase-feedback",
       phase: "completed",
-      projects: sortProjectsByPriority(mockProjects.filter((p) => p.status === "completed")),
+      projects: sortProjectsByPriority(projects.filter((p) => p.status === "completed")),
     },
   ];
 
-  const totalTeamCommits = mockProjects.reduce((sum, p) => sum + (p.commits || 0), 0);
+  const totalTeamCommits = projects.reduce((sum, p) => sum + (p.commits || 0), 0);
 
   return (
     <div
@@ -88,24 +139,28 @@ export default function ManagerDashboard() {
     >
       <Header />
 
-      <main style={{ padding: "40px 24px", maxWidth: "1800px", margin: "0 auto" }}>
+      <main style={{ padding: "48px 48px", maxWidth: "2000px", margin: "0 auto" }}>
         {/* Welcome Section */}
-        <div style={{ marginBottom: "40px" }}>
+        <div style={{ marginBottom: "56px" }}>
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "start",
-              gap: "16px",
+              alignItems: "center",
+              gap: "32px",
             }}
           >
             <div>
               <h1
                 style={{
-                  fontSize: "2.2rem",
-                  fontWeight: "800",
-                  margin: "0 0 8px 0",
-                  letterSpacing: "-0.02em",
+                  fontSize: "3rem",
+                  fontWeight: "900",
+                  margin: "0 0 12px 0",
+                  letterSpacing: "-0.03em",
+                  background: "linear-gradient(135deg, #e5eefc, #97a6c0)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
                 }}
               >
                 Management Dashboard
@@ -115,25 +170,30 @@ export default function ManagerDashboard() {
               </p>
             </div>
             <button
+              onClick={() => setShowCreateForm(true)}
               style={{
-                padding: "10px 16px",
+                padding: "12px 28px",
                 background: "linear-gradient(135deg, #22c55e, #16a34a)",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "10px",
                 color: "white",
-                fontWeight: "600",
-                fontSize: "0.9rem",
+                fontWeight: "700",
+                fontSize: "1rem",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
-                transition: "all 0.2s",
+                gap: "10px",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow: "0 8px 16px rgba(34, 197, 94, 0.25)",
+                whiteSpace: "nowrap",
               }}
               onMouseEnter={(e: any) => {
-                (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.boxShadow = "0 12px 24px rgba(34, 197, 94, 0.35)";
               }}
               onMouseLeave={(e: any) => {
-                (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(34, 197, 94, 0.25)";
               }}
             >
               <Plus size={18} /> New Project
@@ -206,6 +266,73 @@ export default function ManagerDashboard() {
           <RiskAlerts alerts={mockRiskAlerts} />
         </div>
 
+        {/* Detected GitHub Members */}
+        {detectedMembers.length > 0 && (
+          <div style={{ marginBottom: "40px" }}>
+            <h2
+              style={{
+                fontSize: "1.25rem",
+                fontWeight: "700",
+                margin: "0 0 20px 0",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <Users size={20} color="#10b981" /> Detected GitHub Members
+              <span style={{ fontSize: "0.8rem", color: "#97a6c0", fontWeight: "400" }}>
+                (from {githubRepos[0]?.name})
+              </span>
+            </h2>
+            <div style={{ 
+              display: "flex", 
+              gap: "16px", 
+              overflowX: "auto", 
+              paddingBottom: "10px",
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(255,255,255,0.1) transparent"
+            }}>
+              {detectedMembers.map((member) => (
+                <div 
+                  key={member.id} 
+                  style={{ 
+                    minWidth: "180px", 
+                    padding: "16px", 
+                    background: "rgba(255, 255, 255, 0.03)", 
+                    borderRadius: "16px", 
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    textAlign: "center"
+                  }}
+                >
+                  <img 
+                    src={member.avatarUrl} 
+                    alt={member.name} 
+                    style={{ 
+                      width: "60px", 
+                      height: "60px", 
+                      borderRadius: "50%", 
+                      marginBottom: "12px",
+                      border: "2px solid rgba(16, 185, 129, 0.3)"
+                    }} 
+                  />
+                  <div style={{ fontWeight: "700", color: "#e5eefc", marginBottom: "2px" }}>{member.name}</div>
+                  <div style={{ fontSize: "0.75rem", color: "#97a6c0", marginBottom: "8px" }}>@{member.githubUsername}</div>
+                  <div style={{ 
+                    fontSize: "0.7rem", 
+                    padding: "4px 8px", 
+                    background: "rgba(16, 185, 129, 0.1)", 
+                    color: "#10b981", 
+                    borderRadius: "10px",
+                    display: "inline-block"
+                  }}>
+                    Productivity: {member.productivity}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Project Phases */}
         <div>
           <h2
@@ -226,6 +353,14 @@ export default function ManagerDashboard() {
           />
         </div>
       </main>
+
+      {/* Create Project Form Modal */}
+      {showCreateForm && (
+        <CreateProjectForm 
+          onClose={() => setShowCreateForm(false)}
+          onSubmit={handleProjectCreate}
+        />
+      )}
 
       {/* Animations */}
       <style>{`

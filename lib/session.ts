@@ -2,6 +2,10 @@ export type SessionUser = {
   email: string;
   role: "manager" | "developer";
   name: string;
+  githubId?: string;
+  githubUsername?: string;
+  githubToken?: string;
+  githubAvatarUrl?: string;
 };
 
 export type RegisteredUser = {
