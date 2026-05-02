@@ -10,6 +10,7 @@ import { MetricsSummary } from "@/components/dashboard/MetricsSummary";
 import { ProjectPhases } from "@/components/dashboard/ProjectPhases";
 import { RiskAlerts } from "@/components/dashboard/RiskAlerts";
 import CreateProjectForm from "@/components/dashboard/CreateProjectForm";
+import ProjectChatbot from "@/components/dashboard/ProjectChatbot";
 import {
   mockTeamMembers,
   mockProjects,
@@ -37,6 +38,7 @@ export default function ManagerDashboard() {
   const [githubRepos, setGithubRepos] = useState<any[]>([]);
   const [detectedMembers, setDetectedMembers] = useState<any[]>([]);
   const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+  const [realAIUsage, setRealAIUsage] = useState<any>(null);
 
   useEffect(() => {
     const storedSession = readSession();
@@ -78,6 +80,12 @@ export default function ManagerDashboard() {
         }
       };
       loadGithubData();
+
+      // Fetch AI Usage
+      fetch("/api/ai/usage")
+        .then(res => res.json())
+        .then(data => setRealAIUsage(data))
+        .catch(err => console.error("Error fetching AI usage:", err));
     }
   }, [router, session?.githubUsername]);
 
@@ -98,7 +106,7 @@ export default function ManagerDashboard() {
     teamSize: mockTeamMembers.length,
     averageProductivity: mockTeamMembers.reduce((sum, m) => sum + m.departmentProductivity, 0) / mockTeamMembers.length,
     avgDeadlineMet: mockTeamMembers.reduce((sum, m) => sum + m.deadline_met_percentage, 0) / mockTeamMembers.length,
-    totalTokensUsed: 148230,
+    totalTokensUsed: realAIUsage?.tokensUsed || 148230,
   };
 
   // Note: project priority computation moved to lib/project-utils for reuse across views.
@@ -361,6 +369,9 @@ export default function ManagerDashboard() {
           onSubmit={handleProjectCreate}
         />
       )}
+
+      {/* Floating Chatbot Assistant */}
+      <ProjectChatbot />
 
       {/* Animations */}
       <style>{`

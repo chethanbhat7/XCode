@@ -11,6 +11,7 @@ import { CommitHeatmap } from "@/components/dashboard/CommitHeatmap";
 import { AITokenTracker } from "@/components/dashboard/AITokenTracker";
 import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
 import { TaskDetailSide } from "@/components/dashboard/TaskDetailSide";
+import ProjectChatbot from "@/components/dashboard/ProjectChatbot";
 import {
   mockTasks,
   mockProjects,
@@ -40,6 +41,7 @@ export default function DeveloperDashboard() {
   const [realRepos, setRealRepos] = useState<GitHubRepo[]>([]);
   const [detectedMembers, setDetectedMembers] = useState<any[]>([]);
   const [isLoadingRealData, setIsLoadingRealData] = useState(false);
+  const [realAIUsage, setRealAIUsage] = useState<any>(null);
 
   useEffect(() => {
     const storedSession = readSession();
@@ -77,6 +79,12 @@ export default function DeveloperDashboard() {
         }
       };
       loadRealData();
+
+      // Fetch AI Usage
+      fetch("/api/ai/usage")
+        .then(res => res.json())
+        .then(data => setRealAIUsage(data))
+        .catch(err => console.error("Error fetching AI usage:", err));
     }
   }, [router]);
 
@@ -112,7 +120,7 @@ export default function DeveloperDashboard() {
   // Developer's own commit/AI data from their team member record
   const myCommits = matchedTeamMember?.contributions?.commits ?? 0;
   const myEfficiency = matchedTeamMember?.contributions?.efficiency ?? 0;
-  const myAIUsage = matchedTeamMember?.aiUsage ?? mockAIUsage;
+  const myAIUsage = realAIUsage || matchedTeamMember?.aiUsage || mockAIUsage;
 
   return (
     <div
@@ -190,90 +198,117 @@ export default function DeveloperDashboard() {
           }}
         >
           <StatCard
-            label="My Tasks In Progress"
+            label="Tasks In Progress"
             value={myInProgressTasks.length}
             icon="📋"
-            trend={{ value: myInProgressTasks.length, isPositive: true }}
+            trend={{ value: 12, isPositive: true }}
+            progress={(myInProgressTasks.length / (myTasks.length || 1)) * 100}
+            subtitle={`${myInProgressTasks.length} active items`}
             accent="blue"
             onClick={() => setTaskFilter("in-progress")}
           />
           <StatCard
-            label="My Completed Tasks"
-            value={myCompletedTasks.length}
-            icon="✅"
-            trend={{ value: myCompletedTasks.length, isPositive: true }}
-            accent="green"
-          />
-          <StatCard
-            label="My Commits"
+            label="Code Velocity"
             value={myCommits}
-            icon="🔗"
-            trend={{ value: 15, isPositive: true }}
+            icon="🚀"
+            trend={{ value: 8, isPositive: true }}
+            progress={85}
+            subtitle="Top 5% of contributors"
             accent="purple"
           />
           <StatCard
-            label="Efficiency Score"
+            label="Success Rate"
             value={`${myEfficiency}%`}
-            icon="⚡"
-            trend={{ value: myEfficiency > 80 ? 5 : -3, isPositive: myEfficiency > 80 }}
-            accent="amber"
+            icon="🎯"
+            trend={{ value: 3, isPositive: true }}
+            progress={myEfficiency}
+            subtitle="Deadline met consistently"
+            accent="green"
           />
           <StatCard
-            label="Hours Logged"
+            label="Workload Balance"
             value={`${myTotalHours}/${myEstimatedHours}h`}
-            icon="⏱️"
+            icon="⚖️"
             trend={{
-              value: myEstimatedHours > 0 ? Math.round((myTotalHours / myEstimatedHours) * 100) : 0,
-              isPositive: myTotalHours <= myEstimatedHours,
+              value: 95,
+              isPositive: true,
             }}
-            accent="blue"
+            progress={(myTotalHours / (myEstimatedHours || 1)) * 100}
+            subtitle="Optimal capacity used"
+            accent="amber"
           />
         </div>
 
-        {/* Real GitHub Data Section (Ready for input) */}
+        {/* Real GitHub Data Section */}
         {session.githubToken && (
-          <div style={{ marginBottom: "40px" }}>
-            <h2
-              style={{
-                fontSize: "1.25rem",
-                fontWeight: "700",
-                margin: "0 0 20px 0",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <GitCommit size={20} color="#22c55e" /> Real GitHub Activity
-              {isLoadingRealData && <span style={{ fontSize: "0.8rem", color: "#97a6c0" }}>(Fetching...)</span>}
-            </h2>
+          <div style={{ marginBottom: "56px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2
+                style={{
+                  fontSize: "1.5rem",
+                  fontWeight: "800",
+                  margin: "0",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  letterSpacing: "-0.02em"
+                }}
+              >
+                <div style={{ padding: "8px", background: "rgba(34, 197, 94, 0.1)", borderRadius: "10px" }}>
+                  <GitCommit size={24} color="#22c55e" />
+                </div>
+                Live Repositories
+                {isLoadingRealData && <span style={{ fontSize: "0.85rem", color: "#97a6c0", fontWeight: "400" }}>(Syncing...)</span>}
+              </h2>
+              <div style={{ fontSize: "0.85rem", color: "#60a5fa", fontWeight: "600", cursor: "pointer" }}>
+                View all on GitHub →
+              </div>
+            </div>
             
             <div style={{ 
               display: "grid", 
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", 
-              gap: "20px" 
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", 
+              gap: "24px" 
             }}>
               {realRepos.length > 0 ? (
                 realRepos.map(repo => (
                   <div key={repo.id} style={{ 
-                    padding: "16px", 
-                    background: "rgba(255, 255, 255, 0.03)", 
-                    borderRadius: "12px", 
-                    border: "1px solid rgba(255, 255, 255, 0.08)" 
-                  }}>
-                    <div style={{ fontWeight: "700", color: "#e5eefc", marginBottom: "4px" }}>{repo.name}</div>
-                    <div style={{ fontSize: "0.8rem", color: "#97a6c0", marginBottom: "12px", height: "2.4em", overflow: "hidden" }}>
-                      {repo.description || "No description provided."}
+                    padding: "24px", 
+                    background: "rgba(255, 255, 255, 0.02)", 
+                    borderRadius: "20px", 
+                    border: "1px solid rgba(255, 255, 255, 0.06)",
+                    transition: "all 0.3s ease",
+                    position: "relative",
+                    overflow: "hidden"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.04)";
+                    e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
+                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.06)";
+                  }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                      <div style={{ fontWeight: "800", color: "#fff", fontSize: "1.1rem" }}>{repo.name}</div>
+                      <Badge label={repo.language || "Docs"} variant="info" size="sm" />
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem" }}>
-                      <span style={{ color: "#7dd3fc" }}>{repo.language || "Unknown"}</span>
-                      <span style={{ color: "#97a6c0" }}>⭐ {repo.stargazers_count}</span>
-                      <a href={repo.html_url} target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6", textDecoration: "none" }}>View Repo →</a>
+                    <div style={{ fontSize: "0.85rem", color: "#97a6c0", marginBottom: "20px", height: "3em", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                      {repo.description || "No description provided. This repository is part of your active project suite."}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "0.8rem" }}>
+                      <span style={{ color: "#fbbf24", display: "flex", alignItems: "center", gap: "4px" }}>
+                        ⭐ {repo.stargazers_count}
+                      </span>
+                      <span style={{ color: "#97a6c0" }}>Updated {new Date(repo.updated_at).toLocaleDateString()}</span>
+                      <a href={repo.html_url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: "auto", color: "#3b82f6", textDecoration: "none", fontWeight: "600" }}>Open</a>
                     </div>
                   </div>
                 ))
               ) : !isLoadingRealData && (
-                <div style={{ color: "#97a6c0", fontSize: "0.9rem", padding: "20px", gridColumn: "1 / -1", textAlign: "center", background: "rgba(255,255,255,0.02)", borderRadius: "12px" }}>
-                  Connect GitHub to see your real repositories here.
+                <div style={{ color: "#97a6c0", fontSize: "1rem", padding: "48px", gridColumn: "1 / -1", textAlign: "center", background: "rgba(255,255,255,0.01)", borderRadius: "24px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+                  Connect your GitHub account in the profile menu to sync live data.
                 </div>
               )}
             </div>
@@ -505,6 +540,9 @@ export default function DeveloperDashboard() {
       {selectedTask && (
         <TaskDetailSide task={selectedTask} onClose={() => setSelectedTask(null)} />
       )}
+
+      {/* Floating Chatbot Assistant */}
+      <ProjectChatbot />
 
       {/* Animations */}
       <style>{`

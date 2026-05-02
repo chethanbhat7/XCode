@@ -127,23 +127,44 @@ export function AITokenTracker({ usage }: AITokenTrackerProps) {
         {/* Sessions */}
         <div
           style={{
-            padding: "12px",
-            background: "rgba(59, 130, 246, 0.1)",
-            borderRadius: "8px",
-            border: "1px solid rgba(59, 130, 246, 0.2)",
+            padding: "16px",
+            background: "linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.02))",
+            borderRadius: "12px",
+            border: "1px solid rgba(59, 130, 246, 0.15)",
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            gap: "12px",
           }}
         >
-          <TrendingUp size={16} color="#3b82f6" />
+          <div style={{ padding: "8px", background: "rgba(59, 130, 246, 0.2)", borderRadius: "8px" }}>
+            <TrendingUp size={18} color="#60a5fa" />
+          </div>
           <div>
-            <div style={{ fontSize: "0.9rem", fontWeight: "600", color: "#e5eefc" }}>
+            <div style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff" }}>
               {usage.assistantSessions}
             </div>
-            <div style={{ fontSize: "0.75rem", color: "#97a6c0" }}>
+            <div style={{ fontSize: "0.8rem", color: "#97a6c0", fontWeight: "500" }}>
               AI Assistant Sessions
             </div>
+          </div>
+        </div>
+
+        {/* Top AI Tasks List */}
+        <div style={{ marginTop: "8px" }}>
+          <div style={{ fontSize: "0.8rem", fontWeight: "700", color: "#97a6c0", textTransform: "uppercase", marginBottom: "12px", letterSpacing: "0.05em" }}>
+            Top AI-Driven Tasks
+          </div>
+          <div style={{ display: "grid", gap: "10px" }}>
+            {[
+              { name: "Code Review Automation", savings: "1.2h" },
+              { name: "Unit Test Generation", savings: "0.8h" },
+              { name: "Documentation Sync", savings: "0.5h" }
+            ].map((task, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", fontSize: "0.85rem" }}>
+                <span style={{ color: "#e5eefc" }}>{task.name}</span>
+                <span style={{ color: "#22c55e", fontWeight: "600" }}>+{task.savings}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

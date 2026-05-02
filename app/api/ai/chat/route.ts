@@ -16,8 +16,15 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
+    // Gemini requires the first message to be from 'user'. 
+    // If the history starts with 'model', we remove it.
+    let sanitizedHistory = history || [];
+    if (sanitizedHistory.length > 0 && sanitizedHistory[0].role === "model") {
+      sanitizedHistory = sanitizedHistory.slice(1);
+    }
+
     const chat = model.startChat({
-      history: history || [],
+      history: sanitizedHistory,
     });
 
     const result = await chat.sendMessage(message);

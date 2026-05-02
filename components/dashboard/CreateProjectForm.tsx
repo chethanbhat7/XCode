@@ -202,32 +202,6 @@ export default function CreateProjectForm({ onClose, onSubmit }: CreateProjectFo
             )}
           </div>
 
-          {/* Status */}
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.85rem",
-                fontWeight: "600",
-                color: "#97a6c0",
-                marginBottom: "6px",
-              }}
-            >
-              Status
-            </label>
-            <Select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              options={[
-                { value: "planning", label: "Planning" },
-                { value: "in-progress", label: "In Progress" },
-                { value: "review", label: "Review" },
-                { value: "completed", label: "Completed" },
-              ]}
-            />
-          </div>
-
           {/* Start Date */}
           <div>
             <label

@@ -14,7 +14,7 @@ interface Message {
 }
 
 interface ProjectChatbotProps {
-  project: Project;
+  project?: Project;
   onTaskCreate?: (task: Partial<Task>) => void;
 }
 
@@ -23,22 +23,26 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
     {
       id: "init",
       type: "ai",
-      content: `Hi! I'm your AI assistant for ${project.name}. I can answer questions about the project, suggest tasks, and help you manage the work. What would you like to know?`,
+      content: project 
+        ? `Hi! I'm your AI assistant for ${project.name}. I can answer questions about the project, suggest tasks, and help you manage the work. What would you like to know?`
+        : "Hi! I'm your PulseBoard AI assistant. I can help you track project progress, manage tasks, and optimize your engineering workflow. How can I help you today?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const chatId = project?.id || "global";
+
   useEffect(() => {
     const scrollToBottom = () => {
-      const element = document.getElementById(`chatbot-messages-${project.id}`);
+      const element = document.getElementById(`chatbot-messages-${chatId}`);
       if (element) {
         element.scrollTop = element.scrollHeight;
       }
     };
     scrollToBottom();
-  }, [messages, project.id]);
+  }, [messages, chatId]);
 
   const generateAIResponse = (userMessage: string): string => {
     const lowerInput = userMessage.toLowerCase();
@@ -54,45 +58,47 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
           description: "Created via AI assistant",
           status: "todo",
           priority: "medium",
-          projectId: project.id,
+          projectId: project?.id || "global",
         });
       }
       return `✓ Created task: "${userMessage.replace(/create task|add task|new task/gi, "").trim() || "New Task"}". I've added it to your project.`;
     }
 
     // Project status/progress queries
-    if (lowerInput.includes("progress") || lowerInput.includes("status")) {
+    if (project && (lowerInput.includes("progress") || lowerInput.includes("status"))) {
       const completedTasks = project.tasks.filter((t) => t.status === "completed").length;
       return `${project.name} is at ${project.progress}% progress. You have ${completedTasks}/${project.tasks.length} tasks completed. The project is currently in "${project.status}" status.`;
     }
 
     // Team info
-    if (lowerInput.includes("team") || lowerInput.includes("member")) {
+    if (project && (lowerInput.includes("team") || lowerInput.includes("member"))) {
       const teamSize = project.teamMembers.length;
       const members = project.teamMembers.slice(0, 3).map((m) => m.name).join(", ");
       return `Your team has ${teamSize} members: ${members}${teamSize > 3 ? ", and others" : ""}. Would you like details about any team member?`;
     }
 
     // Timeline/deadline
-    if (lowerInput.includes("deadline") || lowerInput.includes("due") || lowerInput.includes("timeline")) {
+    if (project && (lowerInput.includes("deadline") || lowerInput.includes("due") || lowerInput.includes("timeline"))) {
       const daysRemaining = getDaysUntil(project.dueDate);
       return `${project.name} is due on ${formatDate(project.dueDate)}. That's approximately ${daysRemaining} days from now.`;
     }
 
     // Tasks list
-    if (lowerInput.includes("tasks") || lowerInput.includes("todo") || lowerInput.includes("list")) {
+    if (project && (lowerInput.includes("tasks") || lowerInput.includes("todo") || lowerInput.includes("list"))) {
       const inProgressCount = project.tasks.filter((t) => t.status === "in-progress").length;
       const todoCount = project.tasks.filter((t) => t.status === "todo").length;
       return `You have ${project.tasks.length} total tasks: ${todoCount} to-do, ${inProgressCount} in progress, and ${project.tasks.filter((t) => t.status === "completed").length} completed.`;
     }
 
     // Repository/commits
-    if (lowerInput.includes("commit") || lowerInput.includes("code") || lowerInput.includes("repository")) {
+    if (project && (lowerInput.includes("commit") || lowerInput.includes("code") || lowerInput.includes("repository"))) {
       return `${project.name} has ${project.commits || 0} commits. Repository: ${project.repository || "Not configured"}. The project is progressing well with regular code updates.`;
     }
 
     // Default helpful response
-    return `I can help you with ${project.name}! Try asking me about:\n• Project progress or status\n• Team members\n• Deadlines and timelines\n• Tasks and to-dos\n• Creating new tasks\n• Repository info\n\nWhat would you like to know?`;
+    return project 
+      ? `I can help you with ${project.name}! Try asking me about:\n• Project progress or status\n• Team members\n• Deadlines and timelines\n• Tasks and to-dos\n• Creating new tasks\n• Repository info\n\nWhat would you like to know?`
+      : "I'm your PulseBoard AI assistant. I can help you manage projects, track team productivity, and automate task creation. Try asking about your current projects or team performance!";
   };
 
   const handleSend = async () => {
@@ -110,10 +116,16 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
     setLoading(true);
 
     try {
-      const chatHistory = messages.map(m => ({
-        role: m.type === "user" ? "user" : "model",
-        parts: [{ text: m.content }]
-      }));
+      console.log("Sending chat request...", { input, historyLength: messages.length });
+      
+      // Gemini API requires the first message in history to be from the 'user'
+      // We skip the initial greeting message if it exists
+      const chatHistory = messages
+        .filter(m => m.id !== "init") 
+        .map(m => ({
+          role: m.type === "user" ? "user" : "model",
+          parts: [{ text: m.content }]
+        }));
 
       const response = await fetch("/api/ai/chat", {
         method: "POST",
@@ -124,7 +136,13 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log("Received AI response:", data);
 
       if (data.error) {
         throw new Error(data.error);
@@ -149,10 +167,11 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
       });
 
     } catch (error: any) {
+      console.error("Chatbot Error:", error);
       const errorMsg: Message = {
         id: Date.now().toString(),
         type: "ai",
-        content: `Error: ${error.message || "Something went wrong. Please check if your API key is configured."}`,
+        content: `Assistant: ${error.message || "I'm having trouble connecting right now. Please check your Gemini API key in .env.local."}`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -226,7 +245,7 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
 
       {/* Messages Area */}
       <div
-        id={`chatbot-messages-${project.id}`}
+        id={`chatbot-messages-${chatId}`}
         style={{
           flex: 1,
           overflowY: "auto",
