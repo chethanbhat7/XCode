@@ -26,7 +26,7 @@ The system organizes development into structured phases:
 ### Planning → Development → Testing → Feedback
 
 ### Implementation:
-- GitHub tracks repository progress, commits, and contribution history
+- GitHub tracks repository progress, commits,project members and contribution history
 - Custom VS Code chatbot captures AI interactions during coding
 - Tasks are broken into small, manageable units
 - AI is integrated as a collaborative assistant at every stage
