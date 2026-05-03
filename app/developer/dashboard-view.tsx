@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { readSession, type SessionUser } from "@/lib/session";
 import { Header } from "@/components/Header";
 import { StatCard } from "@/components/ui/stat-card";
+import { Badge } from "@/components/ui/badge";
 import { TaskList } from "@/components/dashboard/TaskList";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { CommitHeatmap } from "@/components/dashboard/CommitHeatmap";
@@ -12,15 +13,7 @@ import { AITokenTracker } from "@/components/dashboard/AITokenTracker";
 import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
 import { TaskDetailSide } from "@/components/dashboard/TaskDetailSide";
 import ProjectChatbot from "@/components/dashboard/ProjectChatbot";
-import {
-  mockTasks,
-  mockProjects,
-  mockCommitActivity,
-  mockAIUsage,
-  mockProductivityMetrics,
-  mockDevelopers,
-  mockTeamMembers,
-} from "@/lib/mock-data";
+import { useDashboardData } from "@/lib/useDashboardData";
 import { Task, Developer, TeamMember } from "@/lib/dashboard-types";
 import {
   Clock,
@@ -42,6 +35,8 @@ export default function DeveloperDashboard() {
   const [detectedMembers, setDetectedMembers] = useState<any[]>([]);
   const [isLoadingRealData, setIsLoadingRealData] = useState(false);
   const [realAIUsage, setRealAIUsage] = useState<any>(null);
+
+  const { data: dbData, loading, error } = useDashboardData();
 
   useEffect(() => {
     const storedSession = readSession();
@@ -88,27 +83,28 @@ export default function DeveloperDashboard() {
     }
   }, [router]);
 
-  if (!session) return null;
+  if (!session || loading) return <div style={{ color: "#fff", padding: "40px", textAlign: "center" }}>Loading dashboard...</div>;
+  if (error || !dbData) return <div style={{ color: "red", padding: "40px", textAlign: "center" }}>Error loading dashboard: {error}</div>;
 
   // --- Match the logged-in user to a mock developer ---
   // Try matching by email first, then by name, otherwise default to first developer
   const matchedDev: Developer =
-    mockDevelopers.find((d) => d.email.toLowerCase() === session.email.toLowerCase()) ||
-    mockDevelopers.find((d) => d.name.toLowerCase() === session.name.toLowerCase()) ||
-    mockDevelopers[0]; // fallback for demo
+    dbData.developers.find((d) => d.email.toLowerCase() === session.email.toLowerCase()) ||
+    dbData.developers.find((d) => d.name.toLowerCase() === session.name.toLowerCase()) ||
+    dbData.developers[0]; // fallback for demo
 
-  const matchedTeamMember: TeamMember | undefined = mockTeamMembers.find(
-    (m) => m.id === matchedDev.id
+  const matchedTeamMember: TeamMember | undefined = dbData.teamMembers.find(
+    (m) => m.id === matchedDev?.id
   );
 
   // --- Filter data to only this developer ---
-  const myTasks = mockTasks.filter(
-    (t) => t.assignee.id === matchedDev.id
+  const myTasks = dbData.tasks.filter(
+    (t) => t.assignee?.id === matchedDev?.id
   );
 
   const myProjects = sortProjectsByPriority(
-    mockProjects.filter((p) =>
-      p.teamMembers.some((m) => m.id === matchedDev.id)
+    dbData.projects.filter((p) =>
+      p.teamMembers?.some((m) => m.id === matchedDev?.id)
     )
   );
 
@@ -120,7 +116,7 @@ export default function DeveloperDashboard() {
   // Developer's own commit/AI data from their team member record
   const myCommits = matchedTeamMember?.contributions?.commits ?? 0;
   const myEfficiency = matchedTeamMember?.contributions?.efficiency ?? 0;
-  const myAIUsage = realAIUsage || matchedTeamMember?.aiUsage || mockAIUsage;
+  const myAIUsage = realAIUsage || matchedTeamMember?.aiUsage || dbData.aiUsage;
 
   return (
     <div
@@ -462,7 +458,7 @@ export default function DeveloperDashboard() {
             marginBottom: "40px",
           }}
         >
-          <CommitHeatmap activity={mockCommitActivity} />
+          <CommitHeatmap activity={dbData.commitActivity} />
           <AITokenTracker usage={myAIUsage} />
         </div>
 
@@ -504,9 +500,11 @@ export default function DeveloperDashboard() {
                     textAlign: "center"
                   }}
                 >
-                  <img 
+                  <img
                     src={member.avatarUrl} 
-                    alt={member.name} 
+                    alt={member.name}
+                    width={50}
+                    height={50}
                     style={{ 
                       width: "50px", 
                       height: "50px", 
@@ -533,7 +531,7 @@ export default function DeveloperDashboard() {
           </div>
         )}
 
-        <ProductivityChart metrics={mockProductivityMetrics} />
+        <ProductivityChart metrics={dbData.productivityMetrics} />
       </main>
 
       {/* Task Detail Sidebar */}

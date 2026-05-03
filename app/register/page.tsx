@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { saveSession, registerUser } from "@/lib/session";
+import { saveSession } from "@/lib/session";
 import { validateRegistration } from "@/lib/validation";
 
 export default function RegisterPage() {
@@ -37,17 +37,35 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Client-side registration using localStorage
-      const result = registerUser({ name, email, password, role });
+      // Backend registration
+      const regRes = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+      const regData = await regRes.json();
 
-      if (!result.ok) {
-        setGeneralError(result.error || "Registration failed");
+      if (!regRes.ok) {
+        setGeneralError(regData.error || "Registration failed");
         setLoading(false);
         return;
       }
 
       // Auto sign-in after registration
-      saveSession({ email, role, name });
+      const loginRes = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const loginData = await loginRes.json();
+
+      if (loginRes.ok) {
+        saveSession({ email, role, name, githubId: loginData.user?.githubId, githubUsername: loginData.user?.githubUsername });
+      } else {
+        // If auto-login fails for some reason
+        saveSession({ email, role, name });
+      }
+
       router.push(role === "developer" ? "/developer" : "/manager");
     } catch (err) {
       console.error("Registration error:", err);

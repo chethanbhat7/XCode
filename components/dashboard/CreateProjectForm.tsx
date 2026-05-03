@@ -39,6 +39,7 @@ export default function CreateProjectForm({ onClose, onSubmit }: CreateProjectFo
     if (!formData.description.trim()) newErrors.description = "Description required";
     if (!formData.startDate) newErrors.startDate = "Start date required";
     if (!formData.dueDate) newErrors.dueDate = "Due date required";
+    if (!formData.repository.trim()) newErrors.repository = "Repository URL required";
     if (new Date(formData.startDate) >= new Date(formData.dueDate)) {
       newErrors.dueDate = "Due date must be after start date";
     }
@@ -57,7 +58,7 @@ export default function CreateProjectForm({ onClose, onSubmit }: CreateProjectFo
       status: formData.status,
       startDate: formData.startDate,
       dueDate: formData.dueDate,
-      repository: formData.repository || "https://github.com/company/project",
+      repository: formData.repository,
       progress: 0,
       tasks: [],
       commits: 0,
@@ -263,7 +264,7 @@ export default function CreateProjectForm({ onClose, onSubmit }: CreateProjectFo
                 marginBottom: "6px",
               }}
             >
-              Repository URL (Optional)
+              Repository URL
             </label>
             <Input
               type="text"
@@ -273,6 +274,9 @@ export default function CreateProjectForm({ onClose, onSubmit }: CreateProjectFo
               placeholder="https://github.com/..."
               style={{ width: "100%" }}
             />
+            {errors.repository && (
+              <span style={{ fontSize: "0.75rem", color: "#ef4444" }}>{errors.repository}</span>
+            )}
           </div>
 
           {/* Buttons */}

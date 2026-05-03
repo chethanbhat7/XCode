@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { readSession, saveSession, validateCredentials } from "@/lib/session";
+import { readSession, saveSession } from "@/lib/session";
 import { validateEmail, validatePassword } from "@/lib/validation";
 
 export default function LoginPage() {
@@ -45,18 +45,23 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Client-side auth using localStorage
-      const user = validateCredentials(email, password);
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
 
-      if (!user) {
-        setGeneralError("Invalid email or password");
+      if (!res.ok) {
+        setGeneralError(data.error || "Invalid email or password");
         setLoading(false);
         return;
       }
 
-      // Save session and redirect
-      saveSession({ email: user.email, role: user.role, name: user.name });
-      router.push(user.role === "developer" ? "/developer" : "/manager");
+      // Save session cookie for client components
+      saveSession({ email: data.user.email, role: data.user.role, name: data.user.name, githubId: data.user.githubId, githubUsername: data.user.githubUsername });
+      
+      router.push(data.user.role === "developer" ? "/developer" : "/manager");
     } catch (err) {
       console.error("Login error:", err);
       setGeneralError("Failed to sign in. Please try again.");

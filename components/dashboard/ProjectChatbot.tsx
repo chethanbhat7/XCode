@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Project, Task } from "@/lib/dashboard-types";
 import { Send, MessageCircle, Plus } from "lucide-react";
@@ -180,220 +181,280 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
     }
   };
 
-  return (
-    <GlassCard style={{ 
-      display: "flex", 
-      flexDirection: "column", 
-      height: "600px",
-      padding: "0",
-      overflow: "hidden",
-      border: "1px solid rgba(255, 255, 255, 0.08)",
-      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)"
-    }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "16px 20px",
-          background: "linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "50%",
-            background: "rgba(59, 130, 246, 0.2)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "1px solid rgba(59, 130, 246, 0.3)"
-          }}>
-            <MessageCircle size={18} color="#60a5fa" />
-          </div>
-          <div>
-            <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "#f1f5f9", margin: "0" }}>
-              Project Assistant
-            </h3>
-            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981" }} />
-              <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "500" }}>AI Online</span>
-            </div>
-          </div>
-        </div>
-        {onTaskCreate && (
-           <button 
-            onClick={() => onTaskCreate({})}
-            style={{
-              padding: "6px",
-              borderRadius: "6px",
-              background: "rgba(255, 255, 255, 0.05)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              color: "#94a3b8",
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
-            title="New Task"
-           >
-             <Plus size={16} />
-           </button>
-        )}
-      </div>
+  const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-      {/* Messages Area */}
-      <div
-        id={`chatbot-messages-${chatId}`}
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          padding: "20px",
-          scrollBehavior: "smooth"
-        }}
-      >
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            style={{
-              display: "flex",
-              justifyContent: msg.type === "user" ? "flex-end" : "flex-start",
-              animation: "slideIn 0.3s ease-out forwards"
-            }}
-          >
-            <div
-              style={{
-                maxWidth: "85%",
-                padding: "12px 16px",
-                borderRadius: msg.type === "user" ? "16px 16px 2px 16px" : "16px 16px 16px 2px",
-                background:
-                  msg.type === "user"
-                    ? "linear-gradient(135deg, #2563eb, #1d4ed8)"
-                    : "rgba(30, 41, 59, 0.7)",
-                backdropFilter: "blur(4px)",
-                border:
-                  msg.type === "user"
-                    ? "1px solid rgba(59, 130, 246, 0.5)"
-                    : "1px solid rgba(255, 255, 255, 0.1)",
-                fontSize: "0.875rem",
-                color: "#f1f5f9",
-                lineHeight: "1.5",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                boxShadow: msg.type === "user" ? "0 4px 12px rgba(37, 99, 235, 0.2)" : "0 4px 12px rgba(0, 0, 0, 0.1)"
-              }}
-            >
-              {msg.content}
-            </div>
-          </div>
-        ))}
-        {loading && (
-          <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <div
-              style={{
-                padding: "12px 16px",
-                borderRadius: "16px 16px 16px 2px",
-                background: "rgba(30, 41, 59, 0.7)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                fontSize: "0.875rem",
-                color: "#94a3b8",
-                display: "flex",
-                gap: "4px"
-              }}
-            >
-              <div className="dot" style={{ animationDelay: "0s" }} />
-              <div className="dot" style={{ animationDelay: "0.2s" }} />
-              <div className="dot" style={{ animationDelay: "0.4s" }} />
-            </div>
-          </div>
-        )}
-      </div>
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-      {/* Suggested Questions */}
-      {!loading && messages.length < 3 && (
-        <div style={{ padding: "0 20px 10px 20px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {["Project progress?", "Team details?", "Next deadline?", "New task"].map((q) => (
-            <button
-              key={q}
-              onClick={() => { setInput(q); }}
-              style={{
-                padding: "4px 10px",
-                borderRadius: "20px",
-                background: "rgba(59, 130, 246, 0.1)",
-                border: "1px solid rgba(59, 130, 246, 0.2)",
-                color: "#60a5fa",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      )}
+  if (!mounted) return null;
 
-      {/* Input Area */}
-      <div style={{ 
-        padding: "16px 20px", 
-        borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-        background: "rgba(15, 23, 42, 0.3)"
-      }}>
-        <div style={{ 
+  return createPortal(
+    <aside style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "16px" }}>
+      {isOpen && (
+        <GlassCard style={{ 
           display: "flex", 
-          gap: "10px",
-          background: "rgba(255, 255, 255, 0.03)",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "12px",
-          padding: "4px 4px 4px 12px",
-          transition: "all 0.3s ease"
-        }}
-        className="input-container"
-        >
-          <input
-            type="text"
-            placeholder="Ask about project..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+          flexDirection: "column", 
+          height: "500px",
+          width: "350px",
+          padding: "0",
+          overflow: "hidden",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+          animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+        }}>
+          {/* Header */}
+          <div
             style={{
-              flex: 1,
-              padding: "8px 0",
-              background: "transparent",
-              border: "none",
-              color: "#f1f5f9",
-              fontSize: "0.875rem",
-              outline: "none",
-            }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
-            style={{
-              width: "36px",
-              height: "36px",
-              background: input.trim() ? "#2563eb" : "rgba(255, 255, 255, 0.05)",
-              borderRadius: "10px",
-              color: "white",
-              cursor: input.trim() ? "pointer" : "default",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-              border: "none",
-              transform: input.trim() ? "scale(1)" : "scale(0.95)"
+              justifyContent: "space-between",
+              padding: "16px 20px",
+              background: "linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
             }}
           >
-            <Send size={18} />
-          </button>
-        </div>
-      </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "rgba(59, 130, 246, 0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(59, 130, 246, 0.3)"
+              }}>
+                <MessageCircle size={18} color="#60a5fa" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "#f1f5f9", margin: "0" }}>
+                  Project Assistant
+                </h3>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981" }} />
+                  <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: "500" }}>AI Online</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              {onTaskCreate && (
+                <button 
+                  onClick={() => onTaskCreate({})}
+                  style={{
+                    padding: "6px",
+                    borderRadius: "6px",
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    color: "#94a3b8",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  title="New Task"
+                >
+                  <Plus size={16} />
+                </button>
+              )}
+              <button 
+                onClick={() => setIsOpen(false)}
+                style={{
+                  padding: "6px",
+                  borderRadius: "6px",
+                  background: "transparent",
+                  border: "none",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  fontSize: "1.2rem",
+                  lineHeight: "1"
+                }}
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <div
+            id={`chatbot-messages-${chatId}`}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              padding: "20px",
+              scrollBehavior: "smooth"
+            }}
+          >
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                style={{
+                  display: "flex",
+                  justifyContent: msg.type === "user" ? "flex-end" : "flex-start",
+                  animation: "slideIn 0.3s ease-out forwards"
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: "85%",
+                    padding: "12px 16px",
+                    borderRadius: msg.type === "user" ? "16px 16px 2px 16px" : "16px 16px 16px 2px",
+                    background:
+                      msg.type === "user"
+                        ? "linear-gradient(135deg, #2563eb, #1d4ed8)"
+                        : "rgba(30, 41, 59, 0.7)",
+                    backdropFilter: "blur(4px)",
+                    border:
+                      msg.type === "user"
+                        ? "1px solid rgba(59, 130, 246, 0.5)"
+                        : "1px solid rgba(255, 255, 255, 0.1)",
+                    fontSize: "0.875rem",
+                    color: "#f1f5f9",
+                    lineHeight: "1.5",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    boxShadow: msg.type === "user" ? "0 4px 12px rgba(37, 99, 235, 0.2)" : "0 4px 12px rgba(0, 0, 0, 0.1)"
+                  }}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "16px 16px 16px 2px",
+                    background: "rgba(30, 41, 59, 0.7)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    fontSize: "0.875rem",
+                    color: "#94a3b8",
+                    display: "flex",
+                    gap: "4px"
+                  }}
+                >
+                  <div className="dot" style={{ animationDelay: "0s" }} />
+                  <div className="dot" style={{ animationDelay: "0.2s" }} />
+                  <div className="dot" style={{ animationDelay: "0.4s" }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Suggested Questions */}
+          {!loading && messages.length < 3 && (
+            <div style={{ padding: "0 20px 10px 20px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {["Project progress?", "Team details?", "New task"].map((q) => (
+                <button
+                  key={q}
+                  onClick={() => { setInput(q); }}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: "20px",
+                    background: "rgba(59, 130, 246, 0.1)",
+                    border: "1px solid rgba(59, 130, 246, 0.2)",
+                    color: "#60a5fa",
+                    fontSize: "0.75rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Input Area */}
+          <div style={{ 
+            padding: "16px 20px", 
+            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "rgba(15, 23, 42, 0.3)"
+          }}>
+            <div style={{ 
+              display: "flex", 
+              gap: "10px",
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "12px",
+              padding: "4px 4px 4px 12px",
+              transition: "all 0.3s ease"
+            }}
+            className="input-container"
+            >
+              <input
+                type="text"
+                placeholder="Ask about project..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                style={{
+                  flex: 1,
+                  padding: "8px 0",
+                  background: "transparent",
+                  border: "none",
+                  color: "#f1f5f9",
+                  fontSize: "0.875rem",
+                  outline: "none",
+                }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={loading || !input.trim()}
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  background: input.trim() ? "#2563eb" : "rgba(255, 255, 255, 0.05)",
+                  borderRadius: "10px",
+                  color: "white",
+                  cursor: input.trim() ? "pointer" : "default",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                  border: "none",
+                  transform: input.trim() ? "scale(1)" : "scale(0.95)"
+                }}
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Floating Toggle Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: "60px",
+          height: "60px",
+          borderRadius: "50%",
+          background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+          color: "white",
+          border: "none",
+          boxShadow: "0 8px 24px rgba(37, 99, 235, 0.4)",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          zIndex: 10000
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+        onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+      >
+        <MessageCircle size={28} />
+      </button>
 
       <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @keyframes slideIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
@@ -428,6 +489,7 @@ export default function ProjectChatbot({ project, onTaskCreate }: ProjectChatbot
           background: rgba(255, 255, 255, 0.2);
         }
       `}</style>
-    </GlassCard>
+    </aside>,
+    document.body
   );
 }

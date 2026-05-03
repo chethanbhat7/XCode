@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db";
 import { validateRegistration } from "@/lib/validation";
 
+import bcrypt from "bcryptjs";
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -32,11 +34,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create new user
     const newUser = {
       name,
       email: email.toLowerCase(),
-      password, // In production, hash this with bcrypt
+      password: hashedPassword,
       role,
       createdAt: new Date(),
     };

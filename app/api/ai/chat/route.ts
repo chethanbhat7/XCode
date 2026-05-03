@@ -1,9 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { getDatabase } from "@/lib/db";
 
 export async function POST(req: Request) {
   try {
-    const { message, history } = await req.json();
+    const { message, history, projectId } = await req.json();
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -30,6 +31,25 @@ export async function POST(req: Request) {
     const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
+
+    // Persist to MongoDB
+    const db = await getDatabase();
+    await db.collection("ai_chat_logs").insertOne({
+      projectId: projectId || "global",
+      message,
+      response: text,
+      timestamp: new Date(),
+    });
+
+    // Increment AI Usage
+    await db.collection("ai_usage").updateOne(
+      {}, 
+      { 
+        $inc: { tokensUsed: text.length / 4 + message.length / 4, promptsUsed: 1 },
+        $set: { lastUsed: new Date().toISOString() }
+      },
+      { upsert: true }
+    );
 
     return NextResponse.json({ text });
   } catch (error: any) {

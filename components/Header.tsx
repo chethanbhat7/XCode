@@ -234,29 +234,7 @@ export function Header() {
                 )}
               </button>
 
-              {!session?.githubUsername && (
-                <button
-                  onClick={() => {
-                    // Force a success redirect to trigger mock data connection
-                    window.location.href = "/auth-callback?github=success";
-                  }}
-                  style={{
-                    width: "100%",
-                    marginTop: "8px",
-                    padding: "6px 14px",
-                    borderRadius: "8px",
-                    background: "rgba(59, 130, 246, 0.1)",
-                    border: "1px solid rgba(59, 130, 246, 0.2)",
-                    color: "#60a5fa",
-                    fontSize: "0.7rem",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    textAlign: "center"
-                  }}
-                >
-                  Demo: Simulate Connection
-                </button>
-              )}
+
             </div>
 
             {/* Logout */}

@@ -25,6 +25,3 @@ venv/
 .DS_Store
 Thumbs.db
 .vscode/
-
-*.md
-!README.md

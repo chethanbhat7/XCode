@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db";
 import { validateEmail, validatePassword } from "@/lib/validation";
 
+import bcrypt from "bcryptjs";
+import { SignJWT } from "jose";
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -40,17 +43,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password
-    if (user.password !== password) {
-      // In production, use bcrypt.compare()
+    // Check password securely using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return NextResponse.json(
         { ok: false, error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    // Return user data
-    return NextResponse.json(
+    // Generate JWT token
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback_secret_do_not_use_in_prod");
+    const token = await new SignJWT({ 
+      id: user._id.toString(), 
+      email: user.email, 
+      role: user.role 
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('24h')
+      .sign(secret);
+
+    // Create response and set HttpOnly cookie
+    const response = NextResponse.json(
       {
         ok: true,
         user: {
@@ -62,6 +77,16 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     );
+
+    response.cookies.set("xcode.auth_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24, // 24 hours
+      path: "/",
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

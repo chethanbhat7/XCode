@@ -11,8 +11,20 @@ interface AITokenTrackerProps {
 }
 
 export function AITokenTracker({ usage }: AITokenTrackerProps) {
-  const tokenPercent = (usage.tokensUsed / usage.tokensLimit) * 100;
-  const promptPercent = (usage.promptsUsed / usage.promptsLimit) * 100;
+  const safeUsage = usage || {
+    tokensUsed: 0,
+    tokensLimit: 50000,
+    promptsUsed: 0,
+    promptsLimit: 1000,
+    assistantSessions: 0,
+    lastUsed: new Date().toISOString()
+  };
+  
+  const tokensLimit = safeUsage.tokensLimit || 50000;
+  const promptsLimit = safeUsage.promptsLimit || 1000;
+  
+  const tokenPercent = ((safeUsage.tokensUsed || 0) / tokensLimit) * 100;
+  const promptPercent = ((safeUsage.promptsUsed || 0) / promptsLimit) * 100;
 
   return (
     <GlassCard>
@@ -31,7 +43,7 @@ export function AITokenTracker({ usage }: AITokenTrackerProps) {
           <Zap size={18} color="#fbbf24" /> AI Usage Dashboard
         </h3>
         <p style={{ fontSize: "0.85rem", color: "#97a6c0", margin: "0" }}>
-          Last used: {new Date(usage.lastUsed).toLocaleString()}
+          Last used: {new Date(safeUsage.lastUsed || Date.now()).toLocaleString()}
         </p>
       </div>
 
@@ -50,7 +62,7 @@ export function AITokenTracker({ usage }: AITokenTrackerProps) {
               Tokens Used
             </span>
             <Badge
-              label={`${usage.tokensUsed.toLocaleString()} / ${usage.tokensLimit.toLocaleString()}`}
+              label={`${(safeUsage.tokensUsed || 0).toLocaleString()} / ${tokensLimit.toLocaleString()}`}
               variant={tokenPercent > 80 ? "danger" : tokenPercent > 60 ? "warning" : "info"}
               size="sm"
             />
@@ -94,7 +106,7 @@ export function AITokenTracker({ usage }: AITokenTrackerProps) {
               Prompts Used
             </span>
             <Badge
-              label={`${usage.promptsUsed} / ${usage.promptsLimit}`}
+              label={`${safeUsage.promptsUsed || 0} / ${promptsLimit}`}
               variant={promptPercent > 80 ? "danger" : promptPercent > 60 ? "warning" : "success"}
               size="sm"
             />
@@ -141,7 +153,7 @@ export function AITokenTracker({ usage }: AITokenTrackerProps) {
           </div>
           <div>
             <div style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff" }}>
-              {usage.assistantSessions}
+              {safeUsage.assistantSessions || 0}
             </div>
             <div style={{ fontSize: "0.8rem", color: "#97a6c0", fontWeight: "500" }}>
               AI Assistant Sessions

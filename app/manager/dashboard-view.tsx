@@ -11,14 +11,11 @@ import { ProjectPhases } from "@/components/dashboard/ProjectPhases";
 import { RiskAlerts } from "@/components/dashboard/RiskAlerts";
 import CreateProjectForm from "@/components/dashboard/CreateProjectForm";
 import ProjectChatbot from "@/components/dashboard/ProjectChatbot";
-import {
-  mockTeamMembers,
-  mockProjects,
-  mockRiskAlerts,
-} from "@/lib/mock-data";
+import { mockRiskAlerts } from "@/lib/mock-data";
 import { sortProjectsByPriority } from "@/lib/project-utils";
 import { fetchUserOrgs, fetchUserRepos, fetchRepoMembers } from "@/lib/github";
 import { TeamMember, Project, ProjectPhase } from "@/lib/dashboard-types";
+import { useDashboardData } from "@/lib/useDashboardData";
 import {
   Users,
   GitBranch,
@@ -33,12 +30,21 @@ export default function ManagerDashboard() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [githubOrgs, setGithubOrgs] = useState<any[]>([]);
   const [githubRepos, setGithubRepos] = useState<any[]>([]);
   const [detectedMembers, setDetectedMembers] = useState<any[]>([]);
   const [isLoadingGithub, setIsLoadingGithub] = useState(false);
   const [realAIUsage, setRealAIUsage] = useState<any>(null);
+
+  const { data: dbData, loading, error } = useDashboardData();
+
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    if (dbData?.projects) {
+      setProjects(dbData.projects);
+    }
+  }, [dbData]);
 
   useEffect(() => {
     const storedSession = readSession();
@@ -68,7 +74,7 @@ export default function ManagerDashboard() {
             const repo = repos[0];
             const members = await fetchRepoMembers(
               storedSession.githubToken!, 
-              repo.owner?.login || session?.githubUsername || "", 
+              repo.owner?.login || storedSession.githubUsername || "", 
               repo.name
             );
             setDetectedMembers(members);
@@ -87,15 +93,28 @@ export default function ManagerDashboard() {
         .then(data => setRealAIUsage(data))
         .catch(err => console.error("Error fetching AI usage:", err));
     }
-  }, [router, session?.githubUsername]);
+  }, [router]);
 
-  if (!session) return null;
+  if (!session || loading) return <div style={{ color: "#fff", padding: "40px", textAlign: "center" }}>Loading dashboard...</div>;
+  if (error || !dbData) return <div style={{ color: "red", padding: "40px", textAlign: "center" }}>Error loading dashboard: {error}</div>;
 
   // Handler for creating new projects
-  const handleProjectCreate = (newProject: Project) => {
-    setProjects([...projects, newProject]);
-    setShowCreateForm(false);
-    router.push(`/project/${newProject.id}`);
+  const handleProjectCreate = async (newProject: Project) => {
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newProject),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProjects([...projects, data.project]);
+        setShowCreateForm(false);
+        router.push(`/project/${data.project.id}`);
+      }
+    } catch (err) {
+      console.error("Failed to create project", err);
+    }
   };
 
   // Department metrics
@@ -103,11 +122,13 @@ export default function ManagerDashboard() {
     totalProjects: projects.length,
     activeProjects: projects.filter((p) => p.status !== "completed").length,
     completedProjects: projects.filter((p) => p.status === "completed").length,
-    teamSize: mockTeamMembers.length,
-    averageProductivity: mockTeamMembers.reduce((sum, m) => sum + m.departmentProductivity, 0) / mockTeamMembers.length,
-    avgDeadlineMet: mockTeamMembers.reduce((sum, m) => sum + m.deadline_met_percentage, 0) / mockTeamMembers.length,
-    totalTokensUsed: realAIUsage?.tokensUsed || 148230,
+    teamSize: dbData.teamMembers.length,
+    averageProductivity: dbData.teamMembers.reduce((sum, m) => sum + (m.departmentProductivity || 0), 0) / (dbData.teamMembers.length || 1),
+    avgDeadlineMet: dbData.teamMembers.reduce((sum, m) => sum + (m.deadline_met_percentage || 0), 0) / (dbData.teamMembers.length || 1),
+    totalTokensUsed: realAIUsage?.tokensUsed || dbData.aiUsage?.tokensUsed || 0,
   };
+
+
 
   // Note: project priority computation moved to lib/project-utils for reuse across views.
 

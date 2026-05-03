@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { ProjectDetailView } from "@/components/dashboard/ProjectDetailView";
-import { mockProjects } from "@/lib/mock-data";
+import { getDatabase } from "@/lib/db";
 
 type ProjectDetailByIdProps = {
   params?: Promise<{ id?: string | string[] }>;
@@ -15,7 +15,9 @@ async function getProjectId(params?: ProjectDetailByIdProps["params"]) {
 
 export default async function ProjectDetailById({ params }: ProjectDetailByIdProps) {
   const projectId = await getProjectId(params);
-  const project = mockProjects.find((p) => p.id === projectId);
+  
+  const db = await getDatabase();
+  const project = await db.collection("projects").findOne({ id: projectId });
 
   if (!project) {
     return (
@@ -38,6 +40,9 @@ export default async function ProjectDetailById({ params }: ProjectDetailByIdPro
       </div>
     );
   }
+
+  // Next.js server components pass plain objects down. MongoDB documents contain `_id` which is not plain object.
+  const serializedProject = JSON.parse(JSON.stringify(project));
 
   return (
     <div
@@ -67,7 +72,7 @@ export default async function ProjectDetailById({ params }: ProjectDetailByIdPro
             ← Back
           </Link>
         </div>
-        <ProjectDetailView project={project} />
+        <ProjectDetailView project={serializedProject} />
       </main>
     </div>
   );

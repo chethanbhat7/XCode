@@ -37,7 +37,7 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
   const [showAnalytics, setShowAnalytics] = useState(false);
   const selectedMember = project.teamMembers.find((m) => m.id === selectedMemberId) ?? null;
 
-  const handleTaskCreate = (newTask: Partial<Task>) => {
+  const handleTaskCreate = async (newTask: Partial<Task>) => {
     // Use ML-based allocation to assign task to best candidate
     const bestCandidate = getBestCandidate(newTask as Task, project.teamMembers, tasks);
     
@@ -53,7 +53,23 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
       estimatedHours: newTask.estimatedHours || 8,
       actualHours: 0,
     };
-    setTasks((prev) => [...prev, task]);
+
+    try {
+      // Persist the task to MongoDB
+      const res = await fetch(`/api/projects/${project.id}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(task),
+      });
+
+      if (res.ok) {
+        setTasks((prev) => [...prev, task]);
+      } else {
+        console.error("Failed to persist task.");
+      }
+    } catch (err) {
+      console.error("Error creating task:", err);
+    }
   };
   const daysRemaining = Math.ceil(
     (new Date(project.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
